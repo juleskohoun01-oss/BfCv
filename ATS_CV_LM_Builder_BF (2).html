@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>ATS CV & LM Builder BF — Créez votre CV et lettre de motivation</title>
+<meta name="description" content="Générateur de CV et lettre de motivation 100% hors-ligne, conçu pour le marché de l'emploi au Burkina Faso.">
+
+<!-- ============================================================
+     CDN — Aucune donnée n'est envoyée à un serveur : ces librairies
+     tournent entièrement dans le navigateur (offline-first une fois
+     chargées). Si le tel n'a pas internet AU PREMIER chargement,
+     ces CDN doivent avoir été mis en cache par le navigateur.
+     ============================================================ -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/docx@8.2.4/build/index.umd.js"></script>
+
+<style>
+/* =====================================================================
+   1. VARIABLES GLOBALES DE MARQUE (Burkina Faso : Rouge & Or)
+   Modifie ces 2 valeurs pour changer toute l'identité visuelle du site.
+   ===================================================================== */
+:root{
+  --bf-rouge: #DC2626;
+  --bf-or: #F59E0B;
+  --bf-rouge-dark:#991B1B;
+  --bf-or-dark:#B45309;
+  --gris-fonce:#1F2937;
+  --gris-moyen:#4B5563;
+  --gris-clair:#F3F4F6;
+  --bord:#E5E7EB;
+}
+*{box-sizing:border-box;}
+html,body{scroll-behavior:smooth;}
+body{
+  font-family:'Segoe UI', Arial, Helvetica, sans-serif;
+  background:#F5F5F4;
+  color:var(--gris-fonce);
+  -webkit-tap-highlight-color:transparent;
+}
+/* Accessibilité clavier : focus visible partout */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+  outline:3px solid var(--bf-or);
+  outline-offset:2px;
+}
+::-webkit-scrollbar{height:8px;width:8px;}
+::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:4px;}
+
+/* =====================================================================
+   2. NAVIGATION PAR ONGLETS (modules de l'application)
+   ===================================================================== */
+.tab-btn{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:8px 4px; font-size:11px; font-weight:600; color:#9CA3AF;
+  border-bottom:3px solid transparent; white-space:nowrap; flex-shrink:0;
+  transition:color .15s, border-color .15s;
+}
+.tab-btn i{font-size:16px;}
+.tab-btn.active{ color:var(--bf-rouge); border-bottom-color:var(--bf-rouge); }
+.app-page{display:none;}
+.app-page.active{display:block; animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+/* =====================================================================
+   3. FORMULAIRE CV — STEPPER 6 ÉTAPES
+   ===================================================================== */
+.step-dot{
+  width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700; background:#E5E7EB; color:#6B7280; flex-shrink:0;
+  border:2px solid transparent; transition:all .2s;
+}
+.step-dot.active{background:var(--bf-rouge); color:#fff; border-color:var(--bf-rouge-dark);}
+.step-dot.done{background:var(--bf-or); color:#fff;}
+.step-pane{display:none;}
+.step-pane.active{display:block; animation:fadeIn .2s ease;}
+.form-label{display:block; font-size:12.5px; font-weight:600; color:var(--gris-moyen); margin-bottom:4px;}
+.form-input{
+  width:100%; padding:10px 12px; border:1.5px solid var(--bord); border-radius:8px; font-size:14.5px;
+  background:#fff; transition:border-color .15s;
+}
+.form-input:focus{border-color:var(--bf-rouge); outline:none;}
+.btn-primary{
+  background:var(--bf-rouge); color:#fff; font-weight:600; padding:10px 18px; border-radius:8px;
+  transition:background .15s; display:inline-flex; align-items:center; gap:8px; justify-content:center;
+}
+.btn-primary:hover{background:var(--bf-rouge-dark);}
+.btn-primary:disabled{opacity:.5; pointer-events:none;}
+.btn-secondary{
+  background:#fff; color:var(--gris-fonce); font-weight:600; padding:10px 18px; border-radius:8px;
+  border:1.5px solid var(--bord); transition:all .15s; display:inline-flex; align-items:center; gap:8px; justify-content:center;
+}
+.btn-secondary:hover{border-color:var(--gris-moyen);}
+.btn-secondary.active-cat, .btn-secondary.active-ton, .btn-secondary.active-filtre{ background:var(--bf-rouge); color:#fff; border-color:var(--bf-rouge-dark); }
+.btn-or{
+  background:var(--bf-or); color:#fff; font-weight:600; padding:10px 18px; border-radius:8px;
+  transition:background .15s; display:inline-flex; align-items:center; gap:8px; justify-content:center;
+}
+.btn-or:hover{background:var(--bf-or-dark);}
+.btn-ghost-danger{color:#DC2626; font-size:13px; font-weight:600;}
+.card{background:#fff; border:1px solid var(--bord); border-radius:14px; padding:16px;}
+.repeat-block{border:1.5px dashed var(--bord); border-radius:12px; padding:14px; position:relative; margin-bottom:12px; background:#FAFAFA;}
+.chip{
+  display:inline-flex; align-items:center; gap:6px; background:#FEF3E2; color:var(--bf-or-dark);
+  border:1px solid #FDE3B4; padding:5px 10px; border-radius:999px; font-size:12.5px; font-weight:600;
+}
+.chip button{color:#B45309; font-weight:800;}
+.toast{
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+  background:#111827; color:#fff; padding:10px 18px; border-radius:999px; font-size:13.5px; font-weight:600;
+  z-index:200; pointer-events:none; transition:all .25s ease; box-shadow:0 8px 24px rgba(0,0,0,.25);
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+/* =====================================================================
+   4. MOTEUR DE RENDU DES 25 TEMPLATES DE CV
+   Le HTML généré est TOUJOURS : h1 > p (contact) > h2 (sections) > p / ul>li
+   -> Zéro tableau, zéro image, structure lisible par un ATS.
+   La variété visuelle vient uniquement de variables CSS injectées par
+   template (voir TEMPLATES dans le JS) : c'est ce qui permet d'avoir
+   25 rendus distincts sans dupliquer le HTML 25 fois.
+   ===================================================================== */
+#cv-preview-wrap{background:#525659; border-radius:14px; padding:14px; overflow:auto;}
+.cv-page{
+  width:210mm; min-height:297mm; background:#fff; margin:0 auto; box-shadow:0 4px 24px rgba(0,0,0,.3);
+  padding:16mm 14mm; font-family: var(--tpl-font, Arial, Helvetica, sans-serif);
+  color:#111827; font-size:var(--tpl-fs, 10.5pt); line-height:1.45;
+}
+@media (max-width:900px){ .cv-page{width:100%; min-height:auto; padding:7mm 6mm; font-size:9.6pt;} }
+
+.cv-page h1{
+  font-size:calc(var(--tpl-fs, 10.5pt) * 2.35); font-weight:800; margin:0 0 2px 0;
+  color:var(--tpl-primary,#111827); letter-spacing:.2px;
+}
+.cv-page .cv-titre-poste{ font-size:calc(var(--tpl-fs,10.5pt)*1.15); font-weight:600; color:var(--tpl-accent,#DC2626); margin:0 0 8px 0;}
+.cv-page .cv-contacts{ font-size:calc(var(--tpl-fs,10.5pt)*.92); color:#4B5563; margin:0 0 14px 0;}
+.cv-page .cv-contacts span{ white-space:nowrap; }
+.cv-page .cv-contacts span:not(:last-child)::after{ content:"•"; margin:0 7px; color:#D1D5DB; }
+
+.cv-page h2{
+  font-size:calc(var(--tpl-fs,10.5pt)*1.05); font-weight:800; margin:16px 0 8px 0; color:var(--tpl-primary,#111827);
+}
+.cv-page .cv-section{ margin-bottom:2px; }
+.cv-page p{ margin:0 0 6px 0; }
+.cv-page ul{ margin:0 0 4px 0; padding-left:18px; }
+.cv-page li{ margin-bottom:3px; }
+.cv-page .cv-item-titre{ font-weight:700; }
+.cv-page .cv-item-sub{ font-weight:600; color:var(--tpl-accent,#DC2626); }
+.cv-page .cv-item-date{ float:right; font-size:.9em; color:#6B7280; font-weight:600; }
+.cv-page .cv-item-head{ display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+
+/* --- variantes de style de titre de section (choisies par template) --- */
+.sec-underline h2{ border-bottom:2px solid var(--tpl-accent,#DC2626); padding-bottom:4px; }
+.sec-bar h2{ background:var(--tpl-accent,#DC2626); color:#fff !important; padding:5px 10px; border-radius:3px; }
+.sec-caps h2{ text-transform:uppercase; letter-spacing:2px; font-size:calc(var(--tpl-fs,10.5pt)*.92); border-bottom:1px solid #D1D5DB; padding-bottom:5px; }
+.sec-boxed h2{ border:1.5px solid var(--tpl-accent,#DC2626); padding:4px 10px; border-radius:4px; display:inline-block; }
+.sec-dotline h2::before{ content:"— "; color:var(--tpl-accent,#DC2626); }
+.sec-sidebarcolor h2{ color:var(--tpl-accent,#DC2626); border-left:4px solid var(--tpl-accent,#DC2626); padding-left:8px; }
+
+/* --- variantes d'en-tête --- */
+.hdr-band{ background:var(--tpl-primary,#111827); color:#fff; margin:-16mm -14mm 14px -14mm; padding:16mm 14mm 14px 14mm; }
+.hdr-band h1{ color:#fff !important; }
+.hdr-band .cv-titre-poste{ color:var(--tpl-accent,#F59E0B) !important; }
+.hdr-band .cv-contacts{ color:#E5E7EB !important; }
+.hdr-band .cv-contacts span:not(:last-child)::after{ color:#6B7280 !important; }
+.hdr-center{ text-align:center; }
+.hdr-center .cv-contacts{ display:flex; justify-content:center; flex-wrap:wrap; }
+.hdr-accentline{ border-top:4px solid var(--tpl-accent,#DC2626); padding-top:10px; }
+
+/* densité (espacement) */
+.density-compact .cv-section{ margin-bottom:0; } .density-compact h2{ margin:11px 0 6px 0; } .density-compact p, .density-compact li{ margin-bottom:2px; }
+.density-spacieux h2{ margin:22px 0 11px 0; } .density-spacieux li{ margin-bottom:5px; }
+
+/* Style spécial impression PDF côté navigateur (aperçu seulement, l'export réel passe par jsPDF en texte) */
+@media print{ body *{visibility:hidden;} #cv-preview-wrap, #cv-preview-wrap *{visibility:visible;} #cv-preview-wrap{position:absolute; top:0; left:0;} }
+</style>
+</head>
+
+<body>
+
+<!-- ============================================================
+     EN-TÊTE APPLICATION
+     ============================================================ -->
+<header class="sticky top-0 z-50 bg-white border-b border-gray-200">
+  <div class="h-1.5 w-full flex">
+    <div class="flex-1" style="background:var(--bf-rouge)"></div>
+    <div class="flex-1" style="background:var(--bf-or)"></div>
+  </div>
+  <div class="px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-lg flex items-center justify-center text-white font-black text-sm" style="background:linear-gradient(135deg,var(--bf-rouge),var(--bf-or))">CV</div>
+      <div>
+        <h1 class="text-[15px] font-extrabold leading-tight">ATS CV & LM Builder <span style="color:var(--bf-rouge)">BF</span></h1>
+        <p class="text-[11px] text-gray-500 leading-tight">100% hors-ligne · Aucune donnée envoyée</p>
+      </div>
+    </div>
+    <button onclick="ouvrirExemples()" class="btn-secondary !py-1.5 !px-2.5 !text-[12px]"><i class="fa-solid fa-flask"></i> Exemples</button>
+  </div>
+  <!-- Navigation par onglets -->
+  <nav id="main-tabs" class="flex overflow-x-auto gap-1 px-2 pb-1 border-t border-gray-100">
+    <button class="tab-btn active" data-page="page-cv" onclick="allerPage('page-cv')"><i class="fa-solid fa-file-lines"></i>CV</button>
+    <button class="tab-btn" data-page="page-lm" onclick="allerPage('page-lm')"><i class="fa-solid fa-envelope-open-text"></i>Lettre</button>
+    <button class="tab-btn" data-page="page-scanner" onclick="allerPage('page-scanner')"><i class="fa-solid fa-magnifying-glass-chart"></i>Scanner ATS</button>
+    <button class="tab-btn" data-page="page-phrases" onclick="allerPage('page-phrases')"><i class="fa-solid fa-bolt"></i>Phrases</button>
+    <button class="tab-btn" data-page="page-entretien" onclick="allerPage('page-entretien')"><i class="fa-solid fa-comments"></i>Entretien</button>
+    <button class="tab-btn" data-page="page-suivi" onclick="allerPage('page-suivi')"><i class="fa-solid fa-list-check"></i>Suivi</button>
+  </nav>
+</header>
+
+<main class="max-w-5xl mx-auto px-3 py-4 pb-24">
+
+  <!-- ============================================================
+       PAGE 1 : GÉNÉRATEUR DE CV
+       ============================================================ -->
+  <section id="page-cv" class="app-page active">
+    <div class="grid lg:grid-cols-2 gap-4 items-start">
+
+  <!-- ===================== COLONNE FORMULAIRE ===================== -->
+  <div class="card">
+    <!-- Stepper -->
+    <div class="flex items-center justify-between mb-5 px-1" id="stepper">
+      <div class="step-dot active" data-step="1">1</div><div class="flex-1 h-0.5 bg-gray-200"></div>
+      <div class="step-dot" data-step="2">2</div><div class="flex-1 h-0.5 bg-gray-200"></div>
+      <div class="step-dot" data-step="3">3</div><div class="flex-1 h-0.5 bg-gray-200"></div>
+      <div class="step-dot" data-step="4">4</div><div class="flex-1 h-0.5 bg-gray-200"></div>
+      <div class="step-dot" data-step="5">5</div><div class="flex-1 h-0.5 bg-gray-200"></div>
+      <div class="step-dot" data-step="6">6</div>
+    </div>
+    <p class="text-center text-[11px] text-gray-400 -mt-3 mb-4" id="step-caption">Étape 1 / 6 — Informations personnelles</p>
+
+    <form id="cv-form" onsubmit="return false;">
+
+    <!-- STEP 1 : INFOS -->
+    <div class="step-pane active" data-pane="1">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="form-label">Prénom *</label><input class="form-input" id="f-prenom" oninput="majChamp('infos.prenom', this.value)" placeholder="Aïcha"></div>
+        <div><label class="form-label">Nom *</label><input class="form-input" id="f-nom" oninput="majChamp('infos.nom', this.value)" placeholder="OUEDRAOGO"></div>
+      </div>
+      <div class="mt-3"><label class="form-label">Poste visé *</label><input class="form-input" id="f-poste" oninput="majChamp('infos.poste', this.value)" placeholder="Ex : Chargée de Communication"></div>
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        <div><label class="form-label">Téléphone</label><input class="form-input" id="f-telephone" oninput="majChamp('infos.telephone', this.value)" placeholder="+226 70 00 00 00"></div>
+        <div><label class="form-label">Email</label><input class="form-input" id="f-email" type="email" oninput="majChamp('infos.email', this.value)" placeholder="aicha@email.com"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        <div><label class="form-label">Ville</label><input class="form-input" id="f-ville" oninput="majChamp('infos.ville', this.value)" placeholder="Ouagadougou"></div>
+        <div><label class="form-label">LinkedIn / Portfolio</label><input class="form-input" id="f-linkedin" oninput="majChamp('infos.linkedin', this.value)" placeholder="linkedin.com/in/..."></div>
+      </div>
+      <p class="text-[11.5px] text-gray-400 mt-3"><i class="fa-solid fa-circle-info mr-1"></i>Pas de photo : un CV sans photo passe mieux les logiciels de tri (ATS) et évite toute discrimination à la présélection.</p>
+    </div>
+
+    <!-- STEP 2 : PROFIL -->
+    <div class="step-pane" data-pane="2">
+      <label class="form-label">Résumé / accroche professionnelle</label>
+      <textarea class="form-input" id="f-profil" rows="7" maxlength="500" oninput="majChamp('profil.texte', this.value); document.getElementById('profil-count').textContent=this.value.length;" placeholder="Ex : Étudiante en 3ᵉ année de Gestion, rigoureuse et organisée, à la recherche d'un stage en administration pour mettre en pratique mes compétences en bureautique et gestion de dossiers."></textarea>
+      <p class="text-[11px] text-gray-400 text-right mt-1"><span id="profil-count">0</span>/500</p>
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2 text-[12px] text-amber-800">
+        <i class="fa-solid fa-lightbulb mr-1"></i> 3 à 4 phrases : qui vous êtes, votre domaine, 1-2 points forts, ce que vous recherchez. Reprenez des mots-clés de l'offre visée.
+      </div>
+    </div>
+
+    <!-- STEP 3 : EXPÉRIENCES -->
+    <div class="step-pane" data-pane="3">
+      <div id="exp-list"></div>
+      <button type="button" class="btn-secondary w-full" onclick="ajouterExperience()"><i class="fa-solid fa-plus"></i> Ajouter une expérience</button>
+    </div>
+
+    <!-- STEP 4 : FORMATIONS -->
+    <div class="step-pane" data-pane="4">
+      <div id="form-list"></div>
+      <button type="button" class="btn-secondary w-full" onclick="ajouterFormation()"><i class="fa-solid fa-plus"></i> Ajouter une formation</button>
+    </div>
+
+    <!-- STEP 5 : COMPÉTENCES -->
+    <div class="step-pane" data-pane="5">
+      <label class="form-label">Compétences techniques</label>
+      <input class="form-input" id="f-comp-tech" placeholder="Tapez une compétence puis Entrée (ex : Excel)" onkeydown="if(event.key==='Enter'){event.preventDefault(); ajouterCompetence('techniques', this.value); this.value='';}">
+      <div id="chips-tech" class="flex flex-wrap gap-2 mt-2 mb-4"></div>
+
+      <label class="form-label">Qualités / compétences humaines (soft skills)</label>
+      <input class="form-input" id="f-comp-soft" placeholder="Ex : Rigueur, Esprit d'équipe" onkeydown="if(event.key==='Enter'){event.preventDefault(); ajouterCompetence('soft', this.value); this.value='';}">
+      <div id="chips-soft" class="flex flex-wrap gap-2 mt-2"></div>
+      <p class="text-[11.5px] text-gray-400 mt-3"><i class="fa-solid fa-circle-info mr-1"></i>Astuce : visitez le <b>Scanner ATS</b> (onglet du haut) après avoir collé une offre, pour savoir quelles compétences ajouter en priorité.</p>
+    </div>
+
+    <!-- STEP 6 : LANGUES -->
+    <div class="step-pane" data-pane="6">
+      <div id="lang-list"></div>
+      <button type="button" class="btn-secondary w-full" onclick="ajouterLangue()"><i class="fa-solid fa-plus"></i> Ajouter une langue</button>
+    </div>
+
+    </form>
+
+    <div class="flex gap-2 mt-5">
+      <button type="button" class="btn-secondary flex-1" id="btn-prev" onclick="changerEtape(-1)"><i class="fa-solid fa-arrow-left"></i> Précédent</button>
+      <button type="button" class="btn-primary flex-1" id="btn-next" onclick="changerEtape(1)">Suivant <i class="fa-solid fa-arrow-right"></i></button>
+    </div>
+  </div>
+
+  <!-- ===================== COLONNE APERÇU + TEMPLATES ===================== -->
+  <div>
+    <div class="card mb-3">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-bold text-[14px]"><i class="fa-solid fa-palette mr-1" style="color:var(--bf-or-dark)"></i> Choisir un modèle (25)</h3>
+        <span id="tpl-nom-actif" class="text-[11.5px] font-semibold text-gray-500"></span>
+      </div>
+      <div class="flex gap-1.5 mb-2.5" id="tpl-cat-tabs">
+        <button class="btn-secondary !py-1 !px-2.5 !text-[12px] active-cat" data-cat="classique" onclick="filtrerTemplates('classique')">Classiques</button>
+        <button class="btn-secondary !py-1 !px-2.5 !text-[12px]" data-cat="moderne" onclick="filtrerTemplates('moderne')">Modernes</button>
+        <button class="btn-secondary !py-1 !px-2.5 !text-[12px]" data-cat="specialise" onclick="filtrerTemplates('specialise')">Spécialisés</button>
+      </div>
+      <div id="tpl-grid" class="grid grid-cols-5 gap-2 max-h-[150px] overflow-y-auto pr-1"></div>
+    </div>
+
+    <div class="card">
+      <div id="cv-preview-wrap"><div id="cv-render" class="cv-page"></div></div>
+      <div class="grid grid-cols-2 gap-2 mt-3">
+        <button class="btn-primary" onclick="exporterCVenPDF()"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+        <button class="btn-or" onclick="exporterCVenDOCX()"><i class="fa-solid fa-file-word"></i> Export Word</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </section>
+
+  <!-- ============================================================
+       PAGE 2 : LETTRE DE MOTIVATION
+       ============================================================ -->
+  <section id="page-lm" class="app-page">
+    <div class="grid lg:grid-cols-2 gap-4 items-start">
+
+  <!-- ===================== COLONNE PARAMÈTRES ===================== -->
+  <div class="card">
+    <h3 class="font-bold text-[15px] mb-1"><i class="fa-solid fa-envelope-open-text mr-1" style="color:var(--bf-rouge)"></i> Générateur de lettre de motivation</h3>
+    <p class="text-[12px] text-gray-500 mb-3">Génération automatique par règles + mots-clés, exécutée localement sur votre téléphone (aucune IA en ligne, aucune connexion requise). Le résultat reste à relire et personnaliser.</p>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3 text-[12px] text-amber-800" id="lm-warning" style="display:none;">
+      <i class="fa-solid fa-triangle-exclamation mr-1"></i> Remplissez d'abord l'onglet <b>CV</b> (au moins prénom, nom, poste visé) pour une lettre personnalisée.
+    </div>
+
+    <label class="form-label">Coller ici l'offre d'emploi *</label>
+    <textarea class="form-input" id="lm-offre" rows="8" oninput="sauvegarderLM()" placeholder="Collez le texte complet de l'annonce (poste, missions, profil recherché, entreprise...)"></textarea>
+
+    <div class="grid grid-cols-2 gap-3 mt-3">
+      <div><label class="form-label">Nom de l'entreprise (optionnel)</label><input class="form-input" id="lm-entreprise" oninput="sauvegarderLM()" placeholder="Ex : Faso Distribution SARL"></div>
+      <div><label class="form-label">Recruteur (optionnel)</label><input class="form-input" id="lm-recruteur" oninput="sauvegarderLM()" placeholder="Madame / Monsieur X"></div>
+    </div>
+
+    <label class="form-label mt-3">Ton de la lettre</label>
+    <div class="grid grid-cols-3 gap-2" id="lm-ton-tabs">
+      <button class="btn-secondary !text-[12.5px] tpl-ton active-ton" data-ton="professionnel" onclick="choisirTon('professionnel')">Professionnel</button>
+      <button class="btn-secondary !text-[12.5px] tpl-ton" data-ton="dynamique" onclick="choisirTon('dynamique')">Dynamique</button>
+      <button class="btn-secondary !text-[12.5px] tpl-ton" data-ton="direct" onclick="choisirTon('direct')">Direct</button>
+    </div>
+
+    <button class="btn-primary w-full mt-4" onclick="genererLettre()"><i class="fa-solid fa-wand-magic-sparkles"></i> Générer la lettre</button>
+
+    <div id="lm-motscles-zone" class="mt-3" style="display:none;">
+      <p class="text-[11.5px] font-semibold text-gray-500 mb-1">Mots-clés détectés dans l'offre et repris :</p>
+      <div id="lm-motscles" class="flex flex-wrap gap-1.5"></div>
+    </div>
+  </div>
+
+  <!-- ===================== COLONNE RÉSULTAT ===================== -->
+  <div class="card">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-bold text-[14px]"><i class="fa-solid fa-file-lines mr-1" style="color:var(--bf-or-dark)"></i> Aperçu de la lettre</h3>
+      <span class="text-[11px] text-gray-400">modifiable</span>
+    </div>
+    <div id="lm-preview-wrap" style="background:#525659; border-radius:14px; padding:14px;">
+      <div class="cv-page" style="min-height:auto; padding:16mm 14mm;" id="lm-render" contenteditable="true" oninput="lmData.texteEdite = this.innerText;">
+        <p class="text-gray-400 text-[13px]">Votre lettre générée apparaîtra ici. Collez une offre à gauche puis cliquez sur « Générer la lettre ».</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-2 mt-3">
+      <button class="btn-primary" onclick="exporterLMenPDF()"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+      <button class="btn-or" onclick="exporterLMenDOCX()"><i class="fa-solid fa-file-word"></i> Export Word</button>
+    </div>
+  </div>
+</div>
+
+  </section>
+
+  <!-- ============================================================
+       PAGE 3 : SCANNER ATS
+       ============================================================ -->
+  <section id="page-scanner" class="app-page">
+    <div class="grid lg:grid-cols-2 gap-4 items-start">
+
+  <div class="card">
+    <h3 class="font-bold text-[15px] mb-1"><i class="fa-solid fa-magnifying-glass-chart mr-1" style="color:var(--bf-rouge)"></i> Scanner ATS — Score de correspondance</h3>
+    <p class="text-[12px] text-gray-500 mb-3">Compare votre CV à une offre d'emploi et calcule un score de compatibilité, comme le ferait un logiciel de tri de CV (ATS).</p>
+
+    <div class="flex items-center justify-between mb-1">
+      <label class="form-label !mb-0">Texte de votre CV *</label>
+      <button class="text-[11.5px] font-semibold" style="color:var(--bf-rouge)" onclick="remplirCVDepuisGenerateur()"><i class="fa-solid fa-arrow-down"></i> Utiliser mon CV du générateur</button>
+    </div>
+    <textarea class="form-input" id="scan-cv" rows="7" placeholder="Collez ici le texte de votre CV (ou cliquez sur le lien ci-dessus pour le récupérer automatiquement)."></textarea>
+
+    <label class="form-label mt-3">Texte de l'offre d'emploi *</label>
+    <textarea class="form-input" id="scan-offre" rows="7" placeholder="Collez ici le texte complet de l'offre d'emploi."></textarea>
+
+    <button class="btn-primary w-full mt-4" onclick="analyserATS()"><i class="fa-solid fa-bolt"></i> Analyser mon CV</button>
+  </div>
+
+  <div class="card" id="scan-resultats">
+    <h3 class="font-bold text-[14px] mb-3"><i class="fa-solid fa-chart-simple mr-1" style="color:var(--bf-or-dark)"></i> Résultat de l'analyse</h3>
+    <div id="scan-empty" class="text-center text-gray-400 text-[13px] py-10">
+      <i class="fa-solid fa-file-circle-question text-3xl mb-2 block"></i>
+      Lancez une analyse pour voir votre score ici.
+    </div>
+    <div id="scan-content" style="display:none;">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="relative w-24 h-24 flex-shrink-0" id="scan-gauge">
+          <svg viewBox="0 0 36 36" class="w-24 h-24 -rotate-90">
+            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#E5E7EB" stroke-width="3.2"/>
+            <path id="scan-gauge-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--bf-rouge)" stroke-width="3.2" stroke-dasharray="0, 100" stroke-linecap="round"/>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center flex-col">
+            <span id="scan-score-num" class="text-xl font-black">0</span>
+            <span class="text-[9px] text-gray-400 font-bold -mt-1">/ 100</span>
+          </div>
+        </div>
+        <div>
+          <p id="scan-verdict" class="font-bold text-[14px] mb-1">—</p>
+          <p id="scan-detail" class="text-[12px] text-gray-500 leading-snug">—</p>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <p class="text-[12.5px] font-bold text-green-700 mb-1.5"><i class="fa-solid fa-circle-check mr-1"></i>Mots-clés déjà présents (<span id="scan-count-ok">0</span>)</p>
+        <div id="scan-motscles-ok" class="flex flex-wrap gap-1.5"></div>
+      </div>
+      <div>
+        <p class="text-[12.5px] font-bold text-red-700 mb-1.5"><i class="fa-solid fa-circle-xmark mr-1"></i>Mots-clés manquants à ajouter (<span id="scan-count-ko">0</span>)</p>
+        <div id="scan-motscles-ko" class="flex flex-wrap gap-1.5"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </section>
+
+  <!-- ============================================================
+       PAGE 4 : BANQUE DE 500 PHRASES / VERBES D'ACTION
+       ============================================================ -->
+  <section id="page-phrases" class="app-page">
+    <div class="grid lg:grid-cols-2 gap-4 items-start">
+
+  <!-- ===================== OUTIL DE REFORMULATION ===================== -->
+  <div class="card">
+    <h3 class="font-bold text-[15px] mb-1"><i class="fa-solid fa-bolt mr-1" style="color:var(--bf-rouge)"></i> Renforcez vos phrases</h3>
+    <p class="text-[12px] text-gray-500 mb-3">Collez une phrase faible ("J'ai fait...", "Chargé de...") : l'outil la remplace par un verbe d'action fort.</p>
+
+    <label class="form-label">Votre phrase</label>
+    <textarea class="form-input" id="phr-input" rows="3" placeholder="Ex : J'ai fait la gestion des stocks du magasin"></textarea>
+
+    <label class="form-label mt-3">Catégorie du verbe</label>
+    <select class="form-input" id="phr-categorie">
+      <option value="management">Management</option>
+      <option value="vente">Vente</option>
+      <option value="tech">Tech</option>
+      <option value="com">Communication</option>
+    </select>
+
+    <button class="btn-primary w-full mt-4" onclick="renforcerPhrase()"><i class="fa-solid fa-wand-magic-sparkles"></i> Renforcer la phrase</button>
+
+    <div id="phr-resultat-zone" class="mt-4" style="display:none;">
+      <p class="form-label">Résultat</p>
+      <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-[13.5px] text-green-900 flex items-center justify-between gap-2">
+        <span id="phr-resultat"></span>
+        <button onclick="copierTexte(document.getElementById('phr-resultat').textContent)" class="flex-shrink-0" style="color:#16a34a"><i class="fa-solid fa-copy"></i></button>
+      </div>
+      <button class="text-[12px] font-semibold mt-2" style="color:var(--bf-rouge)" onclick="renforcerPhrase()"><i class="fa-solid fa-rotate"></i> Essayer un autre verbe</button>
+    </div>
+  </div>
+
+  <!-- ===================== BANQUE DE VERBES ===================== -->
+  <div class="card">
+    <h3 class="font-bold text-[15px] mb-2"><i class="fa-solid fa-book mr-1" style="color:var(--bf-or-dark)"></i> Banque de verbes d'action (500+)</h3>
+    <input class="form-input mb-2" id="phr-recherche" placeholder="Rechercher un verbe..." oninput="afficherVerbes()">
+    <div class="flex gap-1.5 mb-3 flex-wrap" id="phr-cat-tabs">
+      <button class="btn-secondary !py-1 !px-2.5 !text-[12px] active-cat" data-cat="management" onclick="filtrerVerbes('management')">Management</button>
+      <button class="btn-secondary !py-1 !px-2.5 !text-[12px]" data-cat="vente" onclick="filtrerVerbes('vente')">Vente</button>
+      <button class="btn-secondary !py-1 !px-2.5 !text-[12px]" data-cat="tech" onclick="filtrerVerbes('tech')">Tech</button>
+      <button class="btn-secondary !py-1 !px-2.5 !text-[12px]" data-cat="com" onclick="filtrerVerbes('com')">Communication</button>
+    </div>
+    <p class="text-[11px] text-gray-400 mb-2">Cliquez un verbe pour le copier. <span id="phr-total-count" class="font-semibold"></span></p>
+    <div id="phr-liste" class="flex flex-wrap gap-1.5 max-h-[340px] overflow-y-auto pr-1"></div>
+  </div>
+</div>
+
+  </section>
+
+  <!-- ============================================================
+       PAGE 5 : PRÉPARATION ENTRETIEN
+       ============================================================ -->
+  <section id="page-entretien" class="app-page">
+    <div class="card mb-4">
+  <h3 class="font-bold text-[15px] mb-1"><i class="fa-solid fa-comments mr-1" style="color:var(--bf-rouge)"></i> Préparation à l'entretien</h3>
+  <p class="text-[12px] text-gray-500 mb-3">10 questions probables + réponses types (méthode STAR), générées à partir du poste visé renseigné dans votre CV.</p>
+  <div class="flex items-center justify-between flex-wrap gap-2">
+    <p class="text-[13px]">Poste visé détecté : <span class="font-bold" id="ent-poste-detecte">—</span> · Catégorie : <span class="font-bold" style="color:var(--bf-rouge)" id="ent-categorie-detectee">—</span></p>
+    <button class="btn-primary" onclick="genererQuestionsEntretien()"><i class="fa-solid fa-wand-magic-sparkles"></i> Générer les 10 questions</button>
+  </div>
+</div>
+
+<div id="ent-liste" class="space-y-3"></div>
+
+  </section>
+
+  <!-- ============================================================
+       PAGE 6 : SUIVI DE CANDIDATURES (mini CRM)
+       ============================================================ -->
+  <section id="page-suivi" class="app-page">
+    <div class="card mb-4">
+  <h3 class="font-bold text-[15px] mb-3"><i class="fa-solid fa-list-check mr-1" style="color:var(--bf-rouge)"></i> Ajouter une candidature</h3>
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="form-label">Entreprise *</label><input class="form-input" id="cand-entreprise" placeholder="Ex : ONATEL"></div>
+    <div><label class="form-label">Poste *</label><input class="form-input" id="cand-poste" placeholder="Ex : Chargé de Communication"></div>
+  </div>
+  <div class="grid grid-cols-2 gap-3 mt-3">
+    <div><label class="form-label">Date d'envoi</label><input type="date" class="form-input" id="cand-date"></div>
+    <div><label class="form-label">Statut</label>
+      <select class="form-input" id="cand-statut">
+        <option>Envoyée</option>
+        <option>Relance effectuée</option>
+        <option>Entretien programmé</option>
+        <option>Entretien passé</option>
+        <option>Offre reçue</option>
+        <option>Refusée</option>
+        <option>Acceptée</option>
+      </select>
+    </div>
+  </div>
+  <div class="mt-3"><label class="form-label">Notes (contact, salaire, remarques...)</label><input class="form-input" id="cand-notes" placeholder="Optionnel"></div>
+  <button class="btn-primary w-full mt-3" onclick="ajouterCandidature()"><i class="fa-solid fa-plus"></i> Ajouter au suivi</button>
+</div>
+
+<div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+  <h3 class="font-bold text-[15px]"><i class="fa-solid fa-briefcase mr-1" style="color:var(--bf-or-dark)"></i> Mes candidatures (<span id="cand-total">0</span>)</h3>
+  <div class="flex gap-1.5 flex-wrap" id="cand-filtre-tabs">
+    <button class="btn-secondary !py-1 !px-2.5 !text-[11.5px] active-filtre" data-filtre="toutes" onclick="filtrerCandidatures('toutes')">Toutes</button>
+    <button class="btn-secondary !py-1 !px-2.5 !text-[11.5px]" data-filtre="relance" onclick="filtrerCandidatures('relance')">🔔 À relancer</button>
+    <button class="btn-secondary !py-1 !px-2.5 !text-[11.5px]" data-filtre="active" onclick="filtrerCandidatures('active')">En cours</button>
+  </div>
+</div>
+<div id="cand-liste" class="space-y-2.5"></div>
+<div id="cand-empty" class="text-center text-gray-400 text-[13px] py-10">
+  <i class="fa-solid fa-inbox text-3xl mb-2 block"></i> Aucune candidature enregistrée pour l'instant.
+</div>
+
+  </section>
+
+</main>
+
+<div id="toast" class="toast"></div>
+<div id="modal-root"></div>
+
+
+<script>
+/* =====================================================================
+   ATS CV & LM Builder BF — SCRIPT PRINCIPAL
+   Tout tourne en local dans le navigateur. Rien n'est envoyé en ligne.
+   Sommaire :
+     1. Modèle de données + sauvegarde localStorage
+     2. Navigation (onglets + stepper du formulaire CV)
+     3. Champs simples + compétences (chips)
+     4. Répéteurs : expériences / formations / langues
+     5. 25 templates + moteur de rendu du CV
+     6. Export CV en PDF (texte réel, jsPDF) et DOCX (docx.js)
+     7. Lettre de motivation (extraction de mots-clés + génération)
+     8. Scanner ATS
+     9. Banque de 500 verbes d'action
+    10. Préparation entretien
+    11. Suivi de candidatures (mini CRM)
+    12. Exemples pré-remplis + initialisation générale
+   ===================================================================== */
+
+/* --------------------------------------------------------------
+   1. MODÈLE DE DONNÉES
+   -------------------------------------------------------------- */
+const CLES_STOCKAGE = {
+  cv: 'atsbf_cv_v1',
+  candidatures: 'atsbf_candidatures_v1',
+  lmBrouillon: 'atsbf_lm_v1'
+};
+
+// Structure centrale du CV. Modifiée en direct par le formulaire,
+// puis utilisée par le moteur de rendu, l'export PDF/DOCX, le scanner
+// ATS, la lettre de motivation et la préparation d'entretien.
+let cvData = {
+  infos: { prenom:'', nom:'', poste:'', telephone:'', email:'', ville:'', linkedin:'' },
+  profil: { texte:'' },
+  experiences: [],   // {id, poste, entreprise, ville, debut, fin, actuel, description}
+  formations: [],    // {id, diplome, etablissement, ville, annee, mention}
+  competences: { techniques:[], soft:[] },
+  langues: [],       // {id, langue, niveau}
+  templateId: 'cl1'
+};
+
+let lmData = { ton:'professionnel', texteEdite:'', motscles:[] };
+let candidatures = []; // {id, entreprise, poste, dateEnvoi, statut, notes}
+
+/* --------------------------------------------------------------
+   Utilitaires génériques
+   -------------------------------------------------------------- */
+function genId(){ return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function escapeHTML(str){
+  return String(str==null ? '' : str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(str){ return escapeHTML(str).replace(/`/g, '&#96;'); }
+
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
+}
+
+function copierTexte(texte){
+  navigator.clipboard && navigator.clipboard.writeText(texte).then(()=> toast('Copié dans le presse-papiers ✓')).catch(()=>{
+    // Repli si l'API clipboard est indisponible (vieux navigateurs Android)
+    const ta = document.createElement('textarea'); ta.value = texte; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    toast('Copié dans le presse-papiers ✓');
+  });
+}
+
+/* --------------------------------------------------------------
+   Sauvegarde / chargement localStorage
+   -------------------------------------------------------------- */
+function sauvegarderCV(){ localStorage.setItem(CLES_STOCKAGE.cv, JSON.stringify(cvData)); }
+function chargerCV(){
+  const brut = localStorage.getItem(CLES_STOCKAGE.cv);
+  if(!brut) return;
+  try{
+    const parse = JSON.parse(brut);
+    cvData = Object.assign({}, cvData, parse);
+    cvData.infos = Object.assign({}, cvData.infos, parse.infos);
+    cvData.profil = Object.assign({}, cvData.profil, parse.profil);
+    cvData.competences = Object.assign({techniques:[],soft:[]}, parse.competences);
+  }catch(e){ console.warn('Lecture CV impossible', e); }
+}
+
+function sauvegarderCandidatures(){ localStorage.setItem(CLES_STOCKAGE.candidatures, JSON.stringify(candidatures)); }
+function chargerCandidatures(){
+  const brut = localStorage.getItem(CLES_STOCKAGE.candidatures);
+  if(brut){ try{ candidatures = JSON.parse(brut) || []; }catch(e){ candidatures = []; } }
+}
+
+/* --------------------------------------------------------------
+   2. NAVIGATION — onglets principaux
+   -------------------------------------------------------------- */
+function allerPage(pageId){
+  document.querySelectorAll('.app-page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(pageId === 'page-entretien') detecterCategorieEntretien();
+  if(pageId === 'page-suivi') afficherCandidatures();
+}
+
+/* --------------------------------------------------------------
+   Stepper du formulaire CV (6 étapes)
+   -------------------------------------------------------------- */
+const ETAPES_LABELS = [
+  'Informations personnelles',
+  'Profil professionnel',
+  'Expériences professionnelles',
+  'Formations',
+  'Compétences',
+  'Langues'
+];
+let etapeActuelle = 1;
+
+function changerEtape(direction){
+  if(etapeActuelle === 6 && direction === 1){
+    document.getElementById('cv-preview-wrap').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  const nouvelle = etapeActuelle + direction;
+  if(nouvelle < 1 || nouvelle > 6) return;
+
+  document.querySelector(`.step-pane[data-pane="${etapeActuelle}"]`).classList.remove('active');
+  etapeActuelle = nouvelle;
+  document.querySelector(`.step-pane[data-pane="${etapeActuelle}"]`).classList.add('active');
+
+  document.querySelectorAll('.step-dot').forEach(d => {
+    const s = parseInt(d.dataset.step, 10);
+    d.classList.remove('active','done');
+    if(s === etapeActuelle) d.classList.add('active');
+    else if(s < etapeActuelle) d.classList.add('done');
+  });
+
+  document.getElementById('step-caption').textContent = `Étape ${etapeActuelle} / 6 — ${ETAPES_LABELS[etapeActuelle-1]}`;
+  document.getElementById('btn-prev').disabled = (etapeActuelle === 1);
+  document.getElementById('btn-next').innerHTML = etapeActuelle === 6
+    ? 'Voir l\'aperçu <i class="fa-solid fa-eye"></i>'
+    : 'Suivant <i class="fa-solid fa-arrow-right"></i>';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* --------------------------------------------------------------
+   3. CHAMPS SIMPLES + COMPÉTENCES
+   -------------------------------------------------------------- */
+// Met à jour un champ imbriqué de cvData à partir d'un chemin "infos.prenom"
+function majChamp(chemin, valeur){
+  const parties = chemin.split('.');
+  let obj = cvData;
+  for(let i=0;i<parties.length-1;i++) obj = obj[parties[i]];
+  obj[parties[parties.length-1]] = valeur;
+  sauvegarderCV();
+  rafraichirApercu();
+}
+
+function ajouterCompetence(type, valeur){
+  valeur = (valeur||'').trim();
+  if(!valeur) return;
+  if(!cvData.competences[type].includes(valeur)) cvData.competences[type].push(valeur);
+  sauvegarderCV();
+  afficherChips(type);
+  rafraichirApercu();
+}
+function supprimerCompetence(type, valeur){
+  cvData.competences[type] = cvData.competences[type].filter(v => v !== valeur);
+  sauvegarderCV();
+  afficherChips(type);
+  rafraichirApercu();
+}
+function afficherChips(type){
+  const zoneId = type === 'techniques' ? 'chips-tech' : 'chips-soft';
+  const zone = document.getElementById(zoneId);
+  const liste = cvData.competences[type];
+  zone.innerHTML = liste.length
+    ? liste.map(v => `<span class="chip">${escapeHTML(v)} <button type="button" onclick="supprimerCompetence('${type}','${escapeAttr(v)}')">&times;</button></span>`).join('')
+    : '<span class="text-gray-300 text-[12px]">Aucune pour le moment</span>';
+}
+</script>
+
+<script>
+/* --------------------------------------------------------------
+   4. RÉPÉTEURS : EXPÉRIENCES
+   -------------------------------------------------------------- */
+function ajouterExperience(){
+  cvData.experiences.push({id:genId(), poste:'', entreprise:'', ville:'', debut:'', fin:'', actuel:false, description:''});
+  sauvegarderCV(); renderExperiences(); rafraichirApercu();
+}
+function supprimerExperience(id){
+  cvData.experiences = cvData.experiences.filter(e => e.id !== id);
+  sauvegarderCV(); renderExperiences(); rafraichirApercu();
+}
+function majExperience(id, champ, valeur){
+  const exp = cvData.experiences.find(e => e.id === id);
+  if(!exp) return;
+  exp[champ] = valeur;
+  if(champ === 'actuel' && valeur) exp.fin = '';
+  sauvegarderCV(); rafraichirApercu();
+}
+function inserverVerbeDansExperience(id){
+  const exp = cvData.experiences.find(e => e.id === id);
+  if(!exp) return;
+  const cat = document.getElementById('exp-vcat-'+id).value;
+  const verbe = verbeAleatoire(cat);
+  exp.description = (exp.description ? exp.description.replace(/\n?$/, '\n') : '') + '- ' + verbe + ' ';
+  sauvegarderCV(); renderExperiences(); rafraichirApercu();
+  toast('Verbe « ' + verbe + ' » ajouté — complétez la phrase');
+}
+function renderExperiences(){
+  const zone = document.getElementById('exp-list');
+  if(cvData.experiences.length === 0){
+    zone.innerHTML = '<p class="text-gray-300 text-[12.5px] text-center py-4">Aucune expérience. Les stages, petits boulots et le bénévolat comptent aussi !</p>';
+    return;
+  }
+  zone.innerHTML = cvData.experiences.map((exp,i) => `
+    <div class="repeat-block">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-[11.5px] font-bold text-gray-400">EXPÉRIENCE ${i+1}</span>
+        <button type="button" class="btn-ghost-danger" onclick="supprimerExperience('${exp.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <input class="form-input" placeholder="Intitulé du poste" value="${escapeAttr(exp.poste)}" oninput="majExperience('${exp.id}','poste',this.value)">
+        <input class="form-input" placeholder="Entreprise" value="${escapeAttr(exp.entreprise)}" oninput="majExperience('${exp.id}','entreprise',this.value)">
+      </div>
+      <div class="grid grid-cols-3 gap-2 mt-2">
+        <input class="form-input" placeholder="Ville" value="${escapeAttr(exp.ville)}" oninput="majExperience('${exp.id}','ville',this.value)">
+        <input type="month" class="form-input" value="${escapeAttr(exp.debut)}" oninput="majExperience('${exp.id}','debut',this.value)">
+        <input type="month" class="form-input" value="${escapeAttr(exp.fin)}" ${exp.actuel ? 'disabled' : ''} oninput="majExperience('${exp.id}','fin',this.value)">
+      </div>
+      <label class="flex items-center gap-1.5 mt-2 text-[12px] text-gray-500">
+        <input type="checkbox" ${exp.actuel ? 'checked' : ''} onchange="majExperience('${exp.id}','actuel',this.checked); renderExperiences();"> Poste actuel
+      </label>
+      <textarea class="form-input mt-2" rows="3" placeholder="Une ligne = une réalisation. Ex : Piloté la gestion de 3 caisses et 5 vendeurs" oninput="majExperience('${exp.id}','description',this.value)">${escapeHTML(exp.description)}</textarea>
+      <div class="flex gap-2 mt-1.5">
+        <select class="form-input !py-1.5 !text-[12px]" id="exp-vcat-${exp.id}">
+          <option value="management">Verbe : Management</option>
+          <option value="vente">Verbe : Vente</option>
+          <option value="tech">Verbe : Tech</option>
+          <option value="com">Verbe : Communication</option>
+        </select>
+        <button type="button" class="btn-secondary !py-1.5 !px-3 !text-[12px] flex-shrink-0" onclick="inserverVerbeDansExperience('${exp.id}')" title="Insérer un verbe d'action"><i class="fa-solid fa-bolt"></i></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* --------------------------------------------------------------
+   RÉPÉTEURS : FORMATIONS
+   -------------------------------------------------------------- */
+function ajouterFormation(){
+  cvData.formations.push({id:genId(), diplome:'', etablissement:'', ville:'', annee:'', mention:''});
+  sauvegarderCV(); renderFormations(); rafraichirApercu();
+}
+function supprimerFormation(id){
+  cvData.formations = cvData.formations.filter(f => f.id !== id);
+  sauvegarderCV(); renderFormations(); rafraichirApercu();
+}
+function majFormation(id, champ, valeur){
+  const f = cvData.formations.find(f => f.id === id);
+  if(!f) return;
+  f[champ] = valeur;
+  sauvegarderCV(); rafraichirApercu();
+}
+function renderFormations(){
+  const zone = document.getElementById('form-list');
+  if(cvData.formations.length === 0){
+    zone.innerHTML = '<p class="text-gray-300 text-[12.5px] text-center py-4">Aucune formation ajoutée.</p>';
+    return;
+  }
+  zone.innerHTML = cvData.formations.map((f,i) => `
+    <div class="repeat-block">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-[11.5px] font-bold text-gray-400">FORMATION ${i+1}</span>
+        <button type="button" class="btn-ghost-danger" onclick="supprimerFormation('${f.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      <input class="form-input" placeholder="Diplôme / certification" value="${escapeAttr(f.diplome)}" oninput="majFormation('${f.id}','diplome',this.value)">
+      <div class="grid grid-cols-2 gap-2 mt-2">
+        <input class="form-input" placeholder="Établissement" value="${escapeAttr(f.etablissement)}" oninput="majFormation('${f.id}','etablissement',this.value)">
+        <input class="form-input" placeholder="Ville" value="${escapeAttr(f.ville)}" oninput="majFormation('${f.id}','ville',this.value)">
+      </div>
+      <div class="grid grid-cols-2 gap-2 mt-2">
+        <input class="form-input" placeholder="Année d'obtention" value="${escapeAttr(f.annee)}" oninput="majFormation('${f.id}','annee',this.value)">
+        <input class="form-input" placeholder="Mention (optionnel)" value="${escapeAttr(f.mention)}" oninput="majFormation('${f.id}','mention',this.value)">
+      </div>
+    </div>
+  `).join('');
+}
+
+/* --------------------------------------------------------------
+   RÉPÉTEURS : LANGUES
+   -------------------------------------------------------------- */
+const NIVEAUX_LANGUE = ['Débutant','Intermédiaire','Courant','Bilingue','Langue maternelle'];
+function ajouterLangue(){
+  cvData.langues.push({id:genId(), langue:'', niveau:'Intermédiaire'});
+  sauvegarderCV(); renderLangues(); rafraichirApercu();
+}
+function supprimerLangue(id){
+  cvData.langues = cvData.langues.filter(l => l.id !== id);
+  sauvegarderCV(); renderLangues(); rafraichirApercu();
+}
+function majLangue(id, champ, valeur){
+  const l = cvData.langues.find(l => l.id === id);
+  if(!l) return;
+  l[champ] = valeur;
+  sauvegarderCV(); rafraichirApercu();
+}
+function renderLangues(){
+  const zone = document.getElementById('lang-list');
+  if(cvData.langues.length === 0){
+    zone.innerHTML = '<p class="text-gray-300 text-[12.5px] text-center py-4">Aucune langue ajoutée.</p>';
+    return;
+  }
+  zone.innerHTML = cvData.langues.map((l,i) => `
+    <div class="repeat-block flex items-center gap-2 !py-2.5">
+      <input class="form-input flex-1" placeholder="Ex : Français, Anglais, Mooré, Dioula..." value="${escapeAttr(l.langue)}" oninput="majLangue('${l.id}','langue',this.value)">
+      <select class="form-input flex-1" onchange="majLangue('${l.id}','niveau',this.value)">
+        ${NIVEAUX_LANGUE.map(n => `<option value="${n}" ${l.niveau===n?'selected':''}>${n}</option>`).join('')}
+      </select>
+      <button type="button" class="btn-ghost-danger flex-shrink-0" onclick="supprimerLangue('${l.id}')"><i class="fa-solid fa-trash"></i></button>
+    </div>
+  `).join('');
+}
+</script>
+
+<script>
+/* --------------------------------------------------------------
+   5. LES 25 TEMPLATES DE CV
+   -------------------------------------------------------------- 
+   Pourquoi une CONFIG plutôt que 25 blocs HTML séparés ?
+   -> Un seul moteur de rendu (renderCV) garantit que TOUS les
+      modèles gardent la structure ATS-friendly obligatoire
+      (H1 > P > H2 > P/UL>LI, zéro tableau, zéro image).
+      Seuls les habillages CSS changent (couleurs, police, style
+      de titre de section, style d'en-tête, densité).
+   Pour ajouter un 26e modèle : copie une ligne et change les valeurs.
+   Champs :
+     id, name, cat (classique|moderne|specialise)
+     primary  = couleur du nom / titres H2
+     accent   = couleur secondaire (poste visé, séparateurs, puces)
+     font     = police CSS (reste toujours un standard "ATS-safe")
+     headerStyle = normal | center | band | accentline
+     sectionStyle = underline | bar | caps | boxed | dotline | sidebarcolor
+     densite  = normal | compact | spacieux
+     sectionsLabels / ordre = personnalisation pour les spécialisés
+   -------------------------------------------------------------- */
+const TEMPLATES = [
+  // ---------- 10 CLASSIQUES ----------
+  {id:'cl1', name:'Classique Sobre',        cat:'classique', primary:'#111827', accent:'#DC2626', font:"Arial, Helvetica, sans-serif", headerStyle:'normal', sectionStyle:'underline', densite:'normal'},
+  {id:'cl2', name:'Classique Bleu Marine',  cat:'classique', primary:'#1E3A5F', accent:'#1E3A5F', font:"Arial, Helvetica, sans-serif", headerStyle:'normal', sectionStyle:'caps',      densite:'normal'},
+  {id:'cl3', name:'Classique Centré',       cat:'classique', primary:'#111827', accent:'#B45309', font:"Arial, Helvetica, sans-serif", headerStyle:'center', sectionStyle:'underline', densite:'normal'},
+  {id:'cl4', name:'Classique Doré',         cat:'classique', primary:'#1F2937', accent:'#F59E0B', font:"Arial, Helvetica, sans-serif", headerStyle:'normal', sectionStyle:'boxed',     densite:'normal'},
+  {id:'cl5', name:'Classique Élégant',      cat:'classique', primary:'#111827', accent:'#991B1B', font:"Georgia, 'Times New Roman', serif", headerStyle:'center', sectionStyle:'underline', densite:'spacieux'},
+  {id:'cl6', name:'Classique Compact',      cat:'classique', primary:'#111827', accent:'#4B5563', font:"Arial, Helvetica, sans-serif", headerStyle:'normal', sectionStyle:'caps',      densite:'compact'},
+  {id:'cl7', name:'Classique Rouge Discret',cat:'classique', primary:'#1F2937', accent:'#DC2626', font:"Arial, Helvetica, sans-serif", headerStyle:'normal', sectionStyle:'dotline',   densite:'normal'},
+  {id:'cl8', name:'Classique Anthracite',   cat:'classique', primary:'#374151', accent:'#374151', font:"Arial, Helvetica, sans-serif", headerStyle:'normal', sectionStyle:'underline', densite:'normal'},
+  {id:'cl9', name:'Classique Liseré Or',    cat:'classique', primary:'#111827', accent:'#B45309', font:"Arial, Helvetica, sans-serif", headerStyle:'normal', sectionStyle:'sidebarcolor', densite:'normal'},
+  {id:'cl10',name:'Classique Administratif',cat:'classique', primary:'#111827', accent:'#4B5563', font:"'Times New Roman', Georgia, serif", headerStyle:'center', sectionStyle:'caps',   densite:'compact'},
+
+  // ---------- 10 MODERNES ----------
+  {id:'mo1', name:'Moderne Bandeau Rouge',  cat:'moderne', primary:'#DC2626', accent:'#F59E0B', font:"Arial, Helvetica, sans-serif", headerStyle:'band',       sectionStyle:'bar',         densite:'normal'},
+  {id:'mo2', name:'Moderne Bandeau Or',     cat:'moderne', primary:'#B45309', accent:'#DC2626', font:"Arial, Helvetica, sans-serif", headerStyle:'band',       sectionStyle:'bar',         densite:'normal'},
+  {id:'mo3', name:'Moderne Ligne Accent',   cat:'moderne', primary:'#111827', accent:'#DC2626', font:"Arial, Helvetica, sans-serif", headerStyle:'accentline', sectionStyle:'sidebarcolor',densite:'normal'},
+  {id:'mo4', name:'Moderne Turquoise',      cat:'moderne', primary:'#0F766E', accent:'#0F766E', font:"Arial, Helvetica, sans-serif", headerStyle:'normal',     sectionStyle:'bar',         densite:'normal'},
+  {id:'mo5', name:'Moderne Violet',         cat:'moderne', primary:'#6D28D9', accent:'#6D28D9', font:"Arial, Helvetica, sans-serif", headerStyle:'normal',     sectionStyle:'boxed',       densite:'normal'},
+  {id:'mo6', name:'Moderne Bleu Vif',       cat:'moderne', primary:'#1D4ED8', accent:'#1D4ED8', font:"Arial, Helvetica, sans-serif", headerStyle:'band',       sectionStyle:'bar',         densite:'normal'},
+  {id:'mo7', name:'Moderne Terracotta',     cat:'moderne', primary:'#C2410C', accent:'#B45309', font:"Arial, Helvetica, sans-serif", headerStyle:'center',     sectionStyle:'boxed',       densite:'spacieux'},
+  {id:'mo8', name:'Moderne Émeraude',       cat:'moderne', primary:'#047857', accent:'#047857', font:"Arial, Helvetica, sans-serif", headerStyle:'accentline', sectionStyle:'sidebarcolor',densite:'normal'},
+  {id:'mo9', name:'Moderne Bicolore BF',    cat:'moderne', primary:'#DC2626', accent:'#F59E0B', font:"Arial, Helvetica, sans-serif", headerStyle:'band',       sectionStyle:'bar',         densite:'compact'},
+  {id:'mo10',name:'Moderne Minimal Or',     cat:'moderne', primary:'#1F2937', accent:'#F59E0B', font:"Arial, Helvetica, sans-serif", headerStyle:'normal',     sectionStyle:'dotline',     densite:'spacieux'},
+
+  // ---------- 5 SPÉCIALISÉS ----------
+  {id:'sp1', name:'Spécialisé Tech / IT',   cat:'specialise', primary:'#0F172A', accent:'#0EA5E9', font:"Arial, Helvetica, sans-serif", headerStyle:'normal', sectionStyle:'bar', densite:'compact',
+    sectionsLabels:{experiences:'Projets & Expériences Techniques', competences:'Stack Technique & Outils'}},
+  {id:'sp2', name:'Spécialisé Commercial',  cat:'specialise', primary:'#111827', accent:'#DC2626', font:"Arial, Helvetica, sans-serif", headerStyle:'band', sectionStyle:'bar', densite:'normal',
+    sectionsLabels:{experiences:'Expériences Commerciales & Résultats', competences:'Compétences Commerciales'}},
+  {id:'sp3', name:'Spécialisé Santé',       cat:'specialise', primary:'#0F766E', accent:'#0F766E', font:"Arial, Helvetica, sans-serif", headerStyle:'normal', sectionStyle:'underline', densite:'normal',
+    sectionsLabels:{experiences:'Expérience Clinique & Professionnelle', formations:'Formations & Diplômes'}},
+  {id:'sp4', name:'Spécialisé Éducation',   cat:'specialise', primary:'#1E3A5F', accent:'#B45309', font:"Georgia, serif", headerStyle:'center', sectionStyle:'caps', densite:'normal',
+    sectionsLabels:{experiences:'Expérience Pédagogique', competences:'Compétences Pédagogiques'}},
+  {id:'sp5', name:'Spécialisé Étudiant/Stage', cat:'specialise', primary:'#111827', accent:'#F59E0B', font:"Arial, Helvetica, sans-serif", headerStyle:'normal', sectionStyle:'boxed', densite:'spacieux',
+    sectionsLabels:{experiences:'Stages & Expériences', formations:'Parcours Académique'}, ordre:['profil','formations','experiences','competences','langues']},
+];
+
+const SECTIONS_LABELS_DEFAUT = { profil:'Profil', experiences:'Expérience Professionnelle', formations:'Formation', competences:'Compétences', langues:'Langues' };
+function getTemplate(id){ return TEMPLATES.find(t => t.id === id) || TEMPLATES[0]; }
+
+function formatDateMois(str){
+  if(!str) return '';
+  const parts = str.split('-');
+  if(parts.length < 2) return str;
+  const MOIS = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  const m = parseInt(parts[1], 10);
+  return (MOIS[m-1] || '') + ' ' + parts[0];
+}
+
+// Moteur de rendu : TOUJOURS h1 > p > h2 > p / ul>li. Jamais de <table> ni <img>.
+function renderCV(data, tpl){
+  const labels = Object.assign({}, SECTIONS_LABELS_DEFAUT, tpl.sectionsLabels || {});
+  const ordre = tpl.ordre || ['profil','experiences','formations','competences','langues'];
+
+  const nomComplet = (data.infos.prenom + ' ' + data.infos.nom).trim() || 'Votre Nom';
+  const contacts = [data.infos.telephone, data.infos.email, data.infos.ville, data.infos.linkedin].filter(Boolean);
+  let html = '<h1>' + escapeHTML(nomComplet) + '</h1>';
+  if(data.infos.poste) html += '<p class="cv-titre-poste">' + escapeHTML(data.infos.poste) + '</p>';
+  html += '<p class="cv-contacts">' + contacts.map(c => '<span>'+escapeHTML(c)+'</span>').join('') + '</p>';
+
+  const blocs = {
+    profil: function(){
+      if(!data.profil.texte) return '';
+      return '<div class="cv-section"><h2>'+labels.profil+'</h2><p>'+escapeHTML(data.profil.texte)+'</p></div>';
+    },
+    experiences: function(){
+      if(!data.experiences.length) return '';
+      const items = data.experiences.map(function(e){
+        const periode = e.actuel ? (formatDateMois(e.debut)+' — Aujourd\'hui') : (formatDateMois(e.debut)+' — '+formatDateMois(e.fin));
+        const puces = (e.description||'').split('\n').map(function(l){ return l.replace(/^[-•]\s*/,'').trim(); }).filter(Boolean);
+        const titreLigne = escapeHTML(e.poste||'') + (e.entreprise ? ' — <span class="cv-item-sub">'+escapeHTML(e.entreprise)+'</span>' : '');
+        return '<div style="margin-bottom:10px;">'
+          + '<div class="cv-item-head"><span class="cv-item-titre">'+titreLigne+'</span>'
+          + '<span class="cv-item-date">'+escapeHTML(periode)+(e.ville?' · '+escapeHTML(e.ville):'')+'</span></div>'
+          + (puces.length ? '<ul>'+puces.map(function(p){return '<li>'+escapeHTML(p)+'</li>';}).join('')+'</ul>' : '')
+          + '</div>';
+      }).join('');
+      return '<div class="cv-section"><h2>'+labels.experiences+'</h2>'+items+'</div>';
+    },
+    formations: function(){
+      if(!data.formations.length) return '';
+      const items = data.formations.map(function(f){
+        return '<div style="margin-bottom:8px;">'
+          + '<div class="cv-item-head"><span class="cv-item-titre">'+escapeHTML(f.diplome||'')+'</span>'
+          + '<span class="cv-item-date">'+escapeHTML(f.annee||'')+'</span></div>'
+          + '<p style="margin:0;color:#4B5563;">'+escapeHTML(f.etablissement||'')+(f.ville?' · '+escapeHTML(f.ville):'')+(f.mention?' · '+escapeHTML(f.mention):'')+'</p>'
+          + '</div>';
+      }).join('');
+      return '<div class="cv-section"><h2>'+labels.formations+'</h2>'+items+'</div>';
+    },
+    competences: function(){
+      const tech = data.competences.techniques || [], soft = data.competences.soft || [];
+      if(!tech.length && !soft.length) return '';
+      let inner = '';
+      if(tech.length) inner += '<p><b>Techniques :</b> '+tech.map(escapeHTML).join(' · ')+'</p>';
+      if(soft.length) inner += '<p><b>Savoir-être :</b> '+soft.map(escapeHTML).join(' · ')+'</p>';
+      return '<div class="cv-section"><h2>'+labels.competences+'</h2>'+inner+'</div>';
+    },
+    langues: function(){
+      if(!data.langues.length) return '';
+      const items = data.langues.map(function(l){ return escapeHTML(l.langue||'')+' ('+escapeHTML(l.niveau||'')+')'; }).join(' · ');
+      return '<div class="cv-section"><h2>'+labels.langues+'</h2><p>'+items+'</p></div>';
+    }
+  };
+
+  ordre.forEach(function(cle){ if(blocs[cle]) html += blocs[cle](); });
+  return html;
+}
+
+function rafraichirApercu(){
+  const tpl = getTemplate(cvData.templateId);
+  const el = document.getElementById('cv-render');
+  if(!el) return;
+  el.innerHTML = renderCV(cvData, tpl);
+  el.style.setProperty('--tpl-primary', tpl.primary);
+  el.style.setProperty('--tpl-accent', tpl.accent);
+  el.style.setProperty('--tpl-font', tpl.font);
+  el.style.setProperty('--tpl-fs', tpl.fontSize || '10.5pt');
+  let classes = 'cv-page sec-'+tpl.sectionStyle+' density-'+tpl.densite;
+  if(tpl.headerStyle === 'band') classes += ' hdr-band';
+  if(tpl.headerStyle === 'center') classes += ' hdr-center';
+  if(tpl.headerStyle === 'accentline') classes += ' hdr-accentline';
+  el.className = classes;
+  const nomActif = document.getElementById('tpl-nom-actif');
+  if(nomActif) nomActif.textContent = tpl.name;
+}
+
+/* --------------------------------------------------------------
+   Galerie de sélection des templates
+   -------------------------------------------------------------- */
+let categorieTplActive = 'classique';
+function filtrerTemplates(cat){
+  categorieTplActive = cat;
+  document.querySelectorAll('#tpl-cat-tabs button').forEach(b => b.classList.toggle('active-cat', b.dataset.cat === cat));
+  afficherGrilleTemplates();
+}
+function afficherGrilleTemplates(){
+  const grille = document.getElementById('tpl-grid');
+  if(!grille) return;
+  const liste = TEMPLATES.filter(t => t.cat === categorieTplActive);
+  grille.innerHTML = liste.map(function(t, i){
+    const selectionne = cvData.templateId === t.id;
+    return '<button type="button" onclick="choisirTemplate(\''+t.id+'\')" title="'+escapeAttr(t.name)+'" '
+      + 'class="rounded-lg border-2 p-1.5 flex flex-col items-center gap-1 '+(selectionne ? 'border-red-600' : 'border-gray-200')+'">'
+      + '<span class="w-full h-7 rounded" style="background:linear-gradient(135deg, '+t.primary+', '+t.accent+')"></span>'
+      + '<span class="text-[8.5px] font-bold text-gray-500 leading-none text-center">'+(i+1)+'</span>'
+      + '</button>';
+  }).join('');
+}
+function choisirTemplate(id){
+  cvData.templateId = id;
+  sauvegarderCV();
+  afficherGrilleTemplates();
+  rafraichirApercu();
+  toast('Modèle « ' + getTemplate(id).name + ' » appliqué');
+}
+</script>
+
+<script>
+/* --------------------------------------------------------------
+   6. EXPORT CV — PDF (texte réel, PAS une image -> reste lisible
+      par les logiciels ATS) et DOCX (structure Heading1/2 réelle)
+   -------------------------------------------------------------- */
+function hexVersRVB(hex){
+  hex = (hex||'#000000').replace('#','');
+  if(hex.length === 3) hex = hex.split('').map(c => c+c).join('');
+  const num = parseInt(hex, 16);
+  return [(num>>16)&255, (num>>8)&255, num&255];
+}
+function telechargerBlob(blob, nomFichier){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nomFichier;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 4000);
+}
+function nomFichierBase(){
+  return ((cvData.infos.nom||'candidat')+'_'+(cvData.infos.prenom||'')).trim().replace(/\s+/g,'_');
+}
+
+function exporterCVenPDF(){
+  if(!cvData.infos.prenom && !cvData.infos.nom){ toast('Renseignez au moins votre nom (étape 1)'); return; }
+  if(!window.jspdf){ toast('Librairie PDF non chargée — vérifiez votre connexion puis réessayez'); return; }
+
+  const tpl = getTemplate(cvData.templateId);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p','pt','a4');
+  const marge = 42;
+  const largeurPage = doc.internal.pageSize.getWidth();
+  const hautPage = doc.internal.pageSize.getHeight();
+  const largeurUtile = largeurPage - marge*2;
+  let y = marge;
+  const [pr,pg,pb] = hexVersRVB(tpl.primary);
+  const [ar,ag,ab] = hexVersRVB(tpl.accent);
+
+  function sautSiNecessaire(h){ if(y + h > hautPage - marge){ doc.addPage(); y = marge; } }
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(pr,pg,pb);
+  const nomComplet = (cvData.infos.prenom+' '+cvData.infos.nom).trim() || 'Votre Nom';
+  doc.text(nomComplet, marge, y); y += 22;
+
+  if(cvData.infos.poste){
+    doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(ar,ag,ab);
+    doc.text(cvData.infos.poste, marge, y); y += 17;
+  }
+  const contacts = [cvData.infos.telephone, cvData.infos.email, cvData.infos.ville, cvData.infos.linkedin].filter(Boolean).join('   •   ');
+  if(contacts){
+    doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(90,90,90);
+    const lignes = doc.splitTextToSize(contacts, largeurUtile);
+    lignes.forEach(l => { doc.text(l, marge, y); y += 12; });
+    y += 6;
+  }
+
+  function titreSection(txt){
+    sautSiNecessaire(30); y += 8;
+    doc.setFont('helvetica','bold'); doc.setFontSize(11.5); doc.setTextColor(pr,pg,pb);
+    doc.text(txt.toUpperCase(), marge, y); y += 4;
+    doc.setDrawColor(ar,ag,ab); doc.setLineWidth(1.1);
+    doc.line(marge, y, largeurPage-marge, y); y += 14;
+  }
+  function paragraphe(txt, taille, coul){
+    doc.setFont('helvetica','normal'); doc.setFontSize(taille||10); doc.setTextColor.apply(doc, coul||[55,65,81]);
+    doc.splitTextToSize(txt, largeurUtile).forEach(l => { sautSiNecessaire(14); doc.text(l, marge, y); y += 13; });
+  }
+  function puce(txt){
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(55,65,81);
+    const lignes = doc.splitTextToSize(txt, largeurUtile-14);
+    lignes.forEach((l,i) => { sautSiNecessaire(14); if(i===0) doc.text('•', marge, y); doc.text(l, marge+12, y); y += 13; });
+  }
+
+  const labels = Object.assign({}, SECTIONS_LABELS_DEFAUT, tpl.sectionsLabels||{});
+  const ordre = tpl.ordre || ['profil','experiences','formations','competences','langues'];
+
+  ordre.forEach(cle => {
+    if(cle === 'profil' && cvData.profil.texte){ titreSection(labels.profil); paragraphe(cvData.profil.texte); }
+
+    if(cle === 'experiences' && cvData.experiences.length){
+      titreSection(labels.experiences);
+      cvData.experiences.forEach(e => {
+        sautSiNecessaire(26);
+        const periode = e.actuel ? (formatDateMois(e.debut)+" — Aujourd'hui") : (formatDateMois(e.debut)+' — '+formatDateMois(e.fin));
+        doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(20,20,20);
+        doc.text(e.poste||'', marge, y);
+        doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(120,120,120);
+        doc.text(periode + (e.ville ? ' · '+e.ville : ''), largeurPage-marge, y, {align:'right'});
+        y += 13;
+        if(e.entreprise){
+          doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(ar,ag,ab);
+          doc.text(e.entreprise, marge, y); y += 13;
+        }
+        (e.description||'').split('\n').map(l => l.replace(/^[-•]\s*/,'').trim()).filter(Boolean).forEach(puce);
+        y += 5;
+      });
+    }
+
+    if(cle === 'formations' && cvData.formations.length){
+      titreSection(labels.formations);
+      cvData.formations.forEach(f => {
+        sautSiNecessaire(24);
+        doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(20,20,20);
+        doc.text(f.diplome||'', marge, y);
+        doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(120,120,120);
+        doc.text(f.annee||'', largeurPage-marge, y, {align:'right'});
+        y += 13;
+        const sousLigne = [f.etablissement, f.ville, f.mention].filter(Boolean).join(' · ');
+        if(sousLigne) paragraphe(sousLigne, 9.5, [75,85,99]);
+        y += 4;
+      });
+    }
+
+    if(cle === 'competences' && (cvData.competences.techniques.length || cvData.competences.soft.length)){
+      titreSection(labels.competences);
+      if(cvData.competences.techniques.length) paragraphe('Techniques : '+cvData.competences.techniques.join(' · '));
+      if(cvData.competences.soft.length) paragraphe('Savoir-être : '+cvData.competences.soft.join(' · '));
+    }
+
+    if(cle === 'langues' && cvData.langues.length){
+      titreSection(labels.langues);
+      paragraphe(cvData.langues.map(l => l.langue+' ('+l.niveau+')').join(' · '));
+    }
+  });
+
+  doc.save('CV_'+nomFichierBase()+'.pdf');
+  toast('CV exporté en PDF ✓');
+}
+
+async function exporterCVenDOCX(){
+  if(!cvData.infos.prenom && !cvData.infos.nom){ toast('Renseignez au moins votre nom (étape 1)'); return; }
+  if(!window.docx){ toast('Librairie Word non chargée — vérifiez votre connexion puis réessayez'); return; }
+
+  const tpl = getTemplate(cvData.templateId);
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
+  const labels = Object.assign({}, SECTIONS_LABELS_DEFAUT, tpl.sectionsLabels||{});
+  const ordre = tpl.ordre || ['profil','experiences','formations','competences','langues'];
+  const couleurAccent = (tpl.accent||'#DC2626').replace('#','');
+  const couleurPrimaire = (tpl.primary||'#111827').replace('#','');
+  const children = [];
+
+  const nomComplet = (cvData.infos.prenom+' '+cvData.infos.nom).trim() || 'Votre Nom';
+  children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children:[ new TextRun({text:nomComplet, bold:true, color:couleurPrimaire}) ] }));
+  if(cvData.infos.poste) children.push(new Paragraph({ children:[ new TextRun({text:cvData.infos.poste, bold:true, color:couleurAccent, size:24}) ] }));
+  const contacts = [cvData.infos.telephone, cvData.infos.email, cvData.infos.ville, cvData.infos.linkedin].filter(Boolean).join('   •   ');
+  if(contacts) children.push(new Paragraph({ children:[ new TextRun({text:contacts, size:20, color:'666666'}) ], spacing:{after:200} }));
+
+  function titre(txt){ children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children:[ new TextRun({text:txt, bold:true, color:couleurPrimaire}) ], spacing:{before:220, after:100} })); }
+  function texte(txt, taille){ children.push(new Paragraph({ children:[ new TextRun({text:txt, size:taille||20}) ], spacing:{after:80} })); }
+  function puceDocx(txt){ children.push(new Paragraph({ text:txt, bullet:{level:0}, spacing:{after:40} })); }
+
+  ordre.forEach(cle => {
+    if(cle === 'profil' && cvData.profil.texte){ titre(labels.profil); texte(cvData.profil.texte); }
+
+    if(cle === 'experiences' && cvData.experiences.length){
+      titre(labels.experiences);
+      cvData.experiences.forEach(e => {
+        const periode = e.actuel ? (formatDateMois(e.debut)+" — Aujourd'hui") : (formatDateMois(e.debut)+' — '+formatDateMois(e.fin));
+        children.push(new Paragraph({ children:[
+          new TextRun({text:(e.poste||'') + (e.entreprise ? ' — '+e.entreprise : ''), bold:true, size:21}),
+          new TextRun({text:'   ('+periode+(e.ville ? ' · '+e.ville : '')+')', size:18, color:'6B7280', italics:true})
+        ], spacing:{before:100} }));
+        (e.description||'').split('\n').map(l => l.replace(/^[-•]\s*/,'').trim()).filter(Boolean).forEach(puceDocx);
+      });
+    }
+
+    if(cle === 'formations' && cvData.formations.length){
+      titre(labels.formations);
+      cvData.formations.forEach(f => {
+        children.push(new Paragraph({ children:[
+          new TextRun({text:f.diplome||'', bold:true, size:21}),
+          new TextRun({text:'   ('+(f.annee||'')+')', size:18, color:'6B7280'})
+        ]}));
+        const sousLigne = [f.etablissement, f.ville, f.mention].filter(Boolean).join(' · ');
+        if(sousLigne) texte(sousLigne, 19);
+      });
+    }
+
+    if(cle === 'competences' && (cvData.competences.techniques.length || cvData.competences.soft.length)){
+      titre(labels.competences);
+      if(cvData.competences.techniques.length) texte('Techniques : '+cvData.competences.techniques.join(' · '));
+      if(cvData.competences.soft.length) texte('Savoir-être : '+cvData.competences.soft.join(' · '));
+    }
+
+    if(cle === 'langues' && cvData.langues.length){
+      titre(labels.langues);
+      texte(cvData.langues.map(l => l.langue+' ('+l.niveau+')').join(' · '));
+    }
+  });
+
+  try{
+    const document_ = new Document({ sections:[{ properties:{}, children }] });
+    const blob = await Packer.toBlob(document_);
+    telechargerBlob(blob, 'CV_'+nomFichierBase()+'.docx');
+    toast('CV exporté en Word ✓');
+  }catch(err){
+    console.error(err);
+    toast('Erreur export Word — voir la console');
+  }
+}
+</script>
+
+<script>
+/* --------------------------------------------------------------
+   7. LETTRE DE MOTIVATION — extraction de mots-clés + génération
+   Aucun appel réseau : extraction par fréquence de mots + un
+   dictionnaire de compétences/termes métiers reconnus. C'est une
+   génération par RÈGLES (pas une IA générative en ligne), ce qui
+   permet de fonctionner 100% hors-ligne.
+   -------------------------------------------------------------- */
+const MOTS_VIDES = ['le','la','les','un','une','des','de','du','au','aux','et','ou','a','en','dans','pour','avec','sur','par',
+'est','sont','etre','avoir','ete','ce','cet','cette','ces','qui','que','quoi','dont','mais','donc','or','ni','car','si',
+'tout','tous','toute','toutes','autre','autres','chaque','entre','vers','depuis','jusqu','lors','ans','annee','annees',
+'vous','nous','votre','notre','vos','nos','il','elle','ils','elles','se','sa','son','ses','leur','leurs','ne','pas','plus',
+'comme','ainsi','afin','egalement','sous','etes','avez','avons','ont','sera','seront','cdi','cdd','hf','societe','groupe',
+'veuillez','merci','cordialement','bonjour','cher','chere','recherchons','recherche','recrute','recrutons','poste','postes',
+'mission','missions','profil','candidat','candidature','candidats','type','sein','the','and','of','to','for','avoir','fait',
+'sont','peut','peuvent','doit','doivent','apres','avant','ainsi','tres','bien','sans','vers','egale','toutes','celle','celui',
+'nombreux','plusieurs','notamment','ex','etc','cadre','cadres','niveau','minimum','requis','requise','souhaite','souhaitee'];
+
+// Dictionnaire de compétences / termes métiers reconnus, tous secteurs
+// (utilisé à la fois par le générateur de LM et par le Scanner ATS)
+const COMPETENCES_CONNUES = [
+  'excel','word','powerpoint','outlook','sage','power bi','sql','python','javascript','html','css','wordpress',
+  'canva','photoshop','illustrator','community management','reseaux sociaux','marketing digital','referencement seo',
+  'redaction web','redaction','community manager','gestion de projet','gestion de projets','planification',
+  'gestion du temps','sens de l\'organisation','organisation','rigueur','autonomie','esprit d\'equipe','travail en equipe',
+  'sens du relationnel','sens du contact','communication','ecoute active','force de proposition','proactivite',
+  'adaptabilite','polyvalence','leadership','management d\'equipe','encadrement','esprit d\'initiative','creativite',
+  'negociation','prospection','vente','vente directe','relation client','service client','fidelisation','techniques de vente',
+  'developpement commercial','chiffre d\'affaires','objectifs commerciaux','merchandising',
+  'comptabilite','comptabilite generale','finance','controle de gestion','audit','tresorerie','fiscalite','paie',
+  'ressources humaines','recrutement','gestion administrative','gestion des stocks','logistique','achats','approvisionnement',
+  'supply chain','transport','import export',
+  'genie civil','btp','autocad','topographie','chantier','maconnerie','electricite','plomberie',
+  'agronomie','agriculture','elevage','environnement','developpement durable',
+  'sante publique','epidemiologie','soins infirmiers','pharmacie','statistiques','analyse de donnees','data analyse',
+  'suivi evaluation','gestion de projets de developpement','ong','bailleurs de fonds','rapport d\'activite',
+  'enseignement','pedagogie','formation','animation de formation',
+  'droit','droit du travail','droit des affaires','juridique',
+  'anglais','francais','moore','dioula','multilingue','permis b','permis de conduire',
+  'sens des priorites','gestion du stress','fiabilite','ponctualite','discretion','confidentialite',
+  'reporting','budget','tableaux de bord','veille','analyse','synthese','esprit d\'analyse','resolution de problemes'
+];
+
+function normaliserTexte(str){
+  return (str || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s'-]/g, ' ');
+}
+
+// Retourne une liste de mots-clés pertinents extraits d'un texte d'offre,
+// en priorisant les termes reconnus du dictionnaire métier, complétée par
+// les mots les plus fréquents du texte.
+function extraireMotsCles(texte, limite){
+  limite = limite || 12;
+  const norm = normaliserTexte(texte);
+  const trouves = COMPETENCES_CONNUES.filter(c => norm.includes(normaliserTexte(c)));
+  if(trouves.length >= limite) return trouves.slice(0, limite);
+
+  const mots = norm.split(/\s+/).filter(m => m.length > 3 && !MOTS_VIDES.includes(m));
+  const freq = {};
+  mots.forEach(m => freq[m] = (freq[m] || 0) + 1);
+  const motsFrequents = Object.keys(freq)
+    .sort((a,b) => freq[b] - freq[a])
+    .filter(m => !trouves.some(t => normaliserTexte(t) === m));
+
+  return trouves.concat(motsFrequents).slice(0, limite);
+}
+
+/* --------------------------------------------------------------
+   Sauvegarde du brouillon de lettre
+   -------------------------------------------------------------- */
+function sauvegarderLM(){
+  localStorage.setItem(CLES_STOCKAGE.lmBrouillon, JSON.stringify({
+    ton: lmData.ton,
+    offre: (document.getElementById('lm-offre')||{}).value || '',
+    entreprise: (document.getElementById('lm-entreprise')||{}).value || '',
+    recruteur: (document.getElementById('lm-recruteur')||{}).value || '',
+    texteEdite: lmData.texteEdite
+  }));
+}
+function chargerLM(){
+  const brut = localStorage.getItem(CLES_STOCKAGE.lmBrouillon);
+  if(!brut) return;
+  try{
+    const p = JSON.parse(brut);
+    lmData.ton = p.ton || 'professionnel';
+    if(document.getElementById('lm-offre')) document.getElementById('lm-offre').value = p.offre || '';
+    if(document.getElementById('lm-entreprise')) document.getElementById('lm-entreprise').value = p.entreprise || '';
+    if(document.getElementById('lm-recruteur')) document.getElementById('lm-recruteur').value = p.recruteur || '';
+    document.querySelectorAll('#lm-ton-tabs button').forEach(b => b.classList.toggle('active-ton', b.dataset.ton === lmData.ton));
+  }catch(e){ /* brouillon corrompu ignoré */ }
+}
+
+function choisirTon(ton){
+  lmData.ton = ton;
+  document.querySelectorAll('#lm-ton-tabs button').forEach(b => b.classList.toggle('active-ton', b.dataset.ton === ton));
+  sauvegarderLM();
+}
+
+/* --------------------------------------------------------------
+   Génération de la lettre
+   -------------------------------------------------------------- */
+function genererLettre(){
+  if(!cvData.infos.prenom && !cvData.infos.nom){
+    document.getElementById('lm-warning').style.display = 'block';
+    toast("Complétez d'abord l'onglet CV (prénom, nom, poste visé)");
+    return;
+  }
+  document.getElementById('lm-warning').style.display = 'none';
+
+  const offre = document.getElementById('lm-offre').value.trim();
+  if(!offre){ toast("Collez le texte de l'offre d'emploi"); return; }
+
+  const entreprise = document.getElementById('lm-entreprise').value.trim();
+  const recruteur = document.getElementById('lm-recruteur').value.trim();
+  const motsCles = extraireMotsCles(offre, 8);
+  lmData.motscles = motsCles;
+
+  const nomComplet = (cvData.infos.prenom + ' ' + cvData.infos.nom).trim();
+  const poste = cvData.infos.poste || 'ce poste';
+  const derniereExp = cvData.experiences[0];
+  const experienceCle = derniereExp && derniereExp.poste ? (derniereExp.poste + (derniereExp.entreprise ? ' chez ' + derniereExp.entreprise : '')) : '';
+  const competencesCV = cvData.competences.techniques.concat(cvData.competences.soft);
+  const competencesCommunes = competencesCV.filter(c => motsCles.some(m => normaliserTexte(m) === normaliserTexte(c)));
+  const competencesRetenues = (competencesCommunes.length ? competencesCommunes : competencesCV).slice(0,4);
+  const villeDuJour = cvData.infos.ville || 'Ouagadougou';
+  const dateJour = new Date().toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'});
+  const civilite = recruteur || 'Madame, Monsieur';
+  const formulePolitesse = recruteur ? recruteur + ',' : 'Madame, Monsieur,';
+
+  const salutation = villeDuJour + ', le ' + dateJour;
+  const objet = 'Objet : Candidature au poste de ' + poste + (entreprise ? ' — ' + entreprise : '');
+
+  const skillsTxt = competencesRetenues.length ? competencesRetenues.join(', ') : "organisation et rigueur";
+  const accroche = cvData.profil.texte || "Mon parcours m'a permis de développer des compétences directement utiles à ce poste.";
+
+  const LETTRES = {
+    professionnel: [
+      civilite + ',',
+      'Je vous adresse ma candidature pour le poste de ' + poste + (entreprise ? ' au sein de ' + entreprise : '') + '. ' + accroche,
+      experienceCle
+        ? 'Mon expérience en tant que ' + experienceCle + " m'a permis de renforcer mes compétences en " + skillsTxt + ", des atouts que je souhaite aujourd'hui mettre au service de votre structure."
+        : 'Mes compétences en ' + skillsTxt + ' constituent, je le crois, des atouts pour ce poste.',
+      "Rigoureux(se), organisé(e) et motivé(e), je suis convaincu(e) de pouvoir apporter une réelle valeur ajoutée à votre équipe. Je reste à votre disposition pour un entretien afin de vous exposer plus en détail ma motivation.",
+      "Je vous prie d'agréer, " + formulePolitesse + " l'expression de mes salutations distinguées."
+    ],
+    dynamique: [
+      civilite + ',',
+      "C'est avec grand enthousiasme que je vous propose ma candidature au poste de " + poste + (entreprise ? ' chez ' + entreprise : '') + ' ! ' + accroche,
+      experienceCle
+        ? 'Mon expérience comme ' + experienceCle + " m'a donné l'occasion de développer " + skillsTxt + ", et j'ai hâte de mettre cette énergie au service de vos projets."
+        : 'Mon dynamisme et mes compétences en ' + skillsTxt + ' sont, je pense, exactement ce qu\'il vous faut pour ce poste.',
+      "Curieux(se) et toujours partant(e) pour relever de nouveaux défis, je suis certain(e) que mon énergie fera la différence au sein de votre équipe. Discutons-en rapidement autour d'un entretien !",
+      "Dans l'attente de votre retour, je vous prie d'agréer, " + formulePolitesse + ' mes salutations les meilleures.'
+    ],
+    direct: [
+      civilite + ',',
+      'Je candidate au poste de ' + poste + (entreprise ? ' au sein de ' + entreprise : '') + '.',
+      experienceCle
+        ? 'Fort(e) de mon expérience de ' + experienceCle + ', je maîtrise : ' + skillsTxt + '.'
+        : 'Mes compétences clés : ' + skillsTxt + '.',
+      'Disponible rapidement, je peux vous rencontrer dès que possible pour un entretien.',
+      'Cordialement,'
+    ]
+  };
+
+  const ton = lmData.ton || 'professionnel';
+  const paragraphes = LETTRES[ton];
+  const corpsHTML = paragraphes.map(p => '<p>' + escapeHTML(p) + '</p>').join('');
+
+  const html = '<p style="text-align:right;">' + escapeHTML(salutation) + '</p>'
+    + '<p style="margin-top:14px;"><b>' + escapeHTML(objet) + '</b></p>'
+    + '<div style="margin-top:14px;">' + corpsHTML + '</div>'
+    + '<p style="margin-top:18px;">' + escapeHTML(nomComplet) + '</p>';
+
+  const rendu = document.getElementById('lm-render');
+  rendu.innerHTML = html;
+  lmData.texteEdite = rendu.innerText;
+  sauvegarderLM();
+
+  const zoneMC = document.getElementById('lm-motscles-zone');
+  zoneMC.style.display = motsCles.length ? 'block' : 'none';
+  document.getElementById('lm-motscles').innerHTML = motsCles.map(m => '<span class="chip">'+escapeHTML(m)+'</span>').join('');
+
+  toast('Lettre générée — relisez-la avant envoi ✓');
+}
+
+/* --------------------------------------------------------------
+   Export de la lettre en PDF / DOCX
+   -------------------------------------------------------------- */
+function exporterLMenPDF(){
+  if(!window.jspdf){ toast('Librairie PDF non chargée'); return; }
+  const texte = document.getElementById('lm-render').innerText.trim();
+  if(!texte){ toast("Générez d'abord la lettre"); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p','pt','a4');
+  const marge = 56;
+  const largeurUtile = doc.internal.pageSize.getWidth() - marge*2;
+  const hautPage = doc.internal.pageSize.getHeight();
+  let y = marge;
+  const paragraphes = texte.split('\n').filter(l => l.trim());
+  paragraphes.forEach(p => {
+    doc.setFont('helvetica', p.indexOf('Objet') === 0 ? 'bold' : 'normal');
+    doc.setFontSize(11); doc.setTextColor(30,30,30);
+    doc.splitTextToSize(p, largeurUtile).forEach(l => {
+      if(y > hautPage - marge){ doc.addPage(); y = marge; }
+      doc.text(l, marge, y); y += 16;
+    });
+    y += 10;
+  });
+  doc.save('LM_' + nomFichierBase() + '.pdf');
+  toast('Lettre exportée en PDF ✓');
+}
+
+async function exporterLMenDOCX(){
+  if(!window.docx){ toast('Librairie Word non chargée'); return; }
+  const texte = document.getElementById('lm-render').innerText.trim();
+  if(!texte){ toast("Générez d'abord la lettre"); return; }
+  const { Document, Packer, Paragraph, TextRun } = window.docx;
+  const paragraphes = texte.split('\n').filter(l => l.trim());
+  const children = paragraphes.map(p => new Paragraph({ children:[ new TextRun({text:p, size:22, bold: p.indexOf('Objet')===0}) ], spacing:{after:160} }));
+  try{
+    const document_ = new Document({ sections:[{ properties:{}, children }] });
+    const blob = await Packer.toBlob(document_);
+    telechargerBlob(blob, 'LM_' + nomFichierBase() + '.docx');
+    toast('Lettre exportée en Word ✓');
+  }catch(err){ console.error(err); toast('Erreur export Word'); }
+}
+</script>
+
+<script>
+/* --------------------------------------------------------------
+   8. SCANNER ATS
+   Calcule un score /100 = 70% correspondance de mots-clés avec
+   l'offre + 30% points de structure (longueur, contact visible,
+   présence de puces). Approche identique dans l'esprit à un vrai
+   ATS (Applicant Tracking System) basique, mais 100% local.
+   -------------------------------------------------------------- */
+function remplirCVDepuisGenerateur(){
+  const el = document.getElementById('cv-render');
+  const texte = el ? el.innerText : '';
+  if(!texte.trim()){ toast("Complétez d'abord votre CV dans l'onglet CV"); return; }
+  document.getElementById('scan-cv').value = texte;
+  toast('CV récupéré depuis le générateur ✓');
+}
+
+function analyserATS(){
+  const cvTexte = document.getElementById('scan-cv').value.trim();
+  const offreTexte = document.getElementById('scan-offre').value.trim();
+  if(!cvTexte || !offreTexte){ toast("Collez le CV et l'offre avant d'analyser"); return; }
+
+  const motsCles = extraireMotsCles(offreTexte, 18);
+  const cvNorm = normaliserTexte(cvTexte);
+
+  const trouves = [], manquants = [];
+  motsCles.forEach(m => {
+    const mNorm = normaliserTexte(m);
+    const racine = mNorm.slice(0, Math.max(4, Math.floor(mNorm.length * 0.75)));
+    if(cvNorm.includes(mNorm) || (racine.length >= 4 && cvNorm.includes(racine))) trouves.push(m);
+    else manquants.push(m);
+  });
+
+  const tauxMatch = motsCles.length ? trouves.length / motsCles.length : 0;
+  let score = Math.round(tauxMatch * 70);
+
+  let bonus = 0;
+  const longueur = cvTexte.length;
+  if(longueur >= 800 && longueur <= 6000) bonus += 10;
+  if(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i.test(cvTexte)) bonus += 5;
+  if(/(\+?\d[\d .-]{7,}\d)/.test(cvTexte)) bonus += 5;
+  const lignesPuces = cvTexte.split('\n').filter(l => /^[\s]*[-•*]/.test(l)).length;
+  if(lignesPuces >= 3) bonus += 10;
+  score = Math.min(100, score + bonus);
+
+  document.getElementById('scan-empty').style.display = 'none';
+  document.getElementById('scan-content').style.display = 'block';
+  document.getElementById('scan-score-num').textContent = score;
+  const fillEl = document.getElementById('scan-gauge-fill');
+  fillEl.setAttribute('stroke-dasharray', score + ', 100');
+  let couleur = '#DC2626';
+  if(score >= 75) couleur = '#16A34A'; else if(score >= 50) couleur = '#F59E0B';
+  fillEl.setAttribute('stroke', couleur);
+
+  let verdict, detail;
+  if(score >= 75){ verdict = 'Excellent match !'; detail = 'Votre CV correspond bien aux mots-clés de cette offre. Il devrait bien passer un tri automatique.'; }
+  else if(score >= 50){ verdict = 'Correct, peut être amélioré'; detail = 'Ajoutez les mots-clés manquants ci-dessous — uniquement ceux que vous maîtrisez réellement.'; }
+  else { verdict = 'Faible correspondance'; detail = "Beaucoup de mots-clés de l'offre sont absents de votre CV. Adaptez votre CV à cette offre précise avant de postuler."; }
+  document.getElementById('scan-verdict').textContent = verdict;
+  document.getElementById('scan-detail').textContent = detail;
+
+  document.getElementById('scan-count-ok').textContent = trouves.length;
+  document.getElementById('scan-count-ko').textContent = manquants.length;
+  document.getElementById('scan-motscles-ok').innerHTML = trouves.length
+    ? trouves.map(m => '<span class="chip" style="background:#DCFCE7;color:#15803D;border-color:#BBF7D0;"><i class="fa-solid fa-check"></i> '+escapeHTML(m)+'</span>').join('')
+    : '<span class="text-gray-300 text-[12px]">Aucun</span>';
+  document.getElementById('scan-motscles-ko').innerHTML = manquants.length
+    ? manquants.map(m => '<span class="chip" style="background:#FEE2E2;color:#B91C1C;border-color:#FECACA;"><i class="fa-solid fa-plus"></i> '+escapeHTML(m)+'</span>').join('')
+    : '<span class="text-gray-300 text-[12px]">Aucun 🎉</span>';
+
+  document.getElementById('scan-content').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+</script>
+
+<script>
+/* --------------------------------------------------------------
+   9. BANQUE DE 500 VERBES D'ACTION (4 catégories x 125)
+   -------------------------------------------------------------- */
+const VERBES_ACTION = {
+  management: ["Piloté","Dirigé","Supervisé","Coordonné","Encadré","Managé","Animé","Orchestré","Organisé","Planifié",
+    "Structuré","Mobilisé","Fédéré","Délégué","Arbitré","Impulsé","Initié","Lancé","Déployé","Instauré",
+    "Rationalisé","Restructuré","Réorganisé","Optimisé","Rentabilisé","Budgétisé","Négocié","Représenté","Défendu","Consolidé",
+    "Renforcé","Sécurisé","Contrôlé","Audité","Évalué","Mesuré","Suivi","Conduit","Mené","Guidé",
+    "Administré","Géré","Formé","Accompagné","Recruté","Intégré","Motivé","Responsabilisé","Priorisé","Cadré",
+    "Décidé","Tranché","Validé","Approuvé","Autorisé","Missionné","Positionné","Chapeauté","Anticipé","Programmé",
+    "Élaboré","Défini","Formalisé","Standardisé","Harmonisé","Unifié","Centralisé","Décentralisé","Dynamisé","Insufflé",
+    "Catalysé","Concrétisé","Matérialisé","Généré","Sponsorisé","Financé","Alloué","Réparti","Ventilé","Ordonnancé",
+    "Séquencé","Rythmé","Cadencé","Assuré","Garanti","Certifié","Homologué","Normalisé","Fiabilisé","Pérennisé",
+    "Développé","Étendu","Diversifié","Internationalisé","Implanté","Créé","Fondé","Bâti","Construit","Édifié",
+    "Redressé","Sauvé","Relancé","Transformé","Modernisé","Digitalisé","Informatisé","Automatisé","Simplifié","Allégé",
+    "Réduit","Diminué","Maîtrisé","Contenu","Tutoré","Mentoré","Coaché","Sensibilisé","Impliqué","Engagé",
+    "Rassemblé","Uni","Soudé","Exécuté","Réalisé"],
+  vente: ["Vendu","Négocié","Prospecté","Développé","Fidélisé","Conquis","Décroché","Signé","Conclu","Convaincu",
+    "Argumenté","Persuadé","Démarché","Ciblé","Segmenté","Qualifié","Détecté","Identifié","Généré","Multiplié",
+    "Doublé","Triplé","Augmenté","Accru","Boosté","Stimulé","Dynamisé","Élargi","Étoffé","Consolidé",
+    "Pénétré","Implanté","Lancé","Commercialisé","Distribué","Placé","Référencé","Renégocié","Facturé","Encaissé",
+    "Recouvré","Relancé","Suivi","Accompagné","Conseillé","Orienté","Guidé","Renseigné","Informé","Présenté",
+    "Démontré","Illustré","Exposé","Défendu","Valorisé","Promu","Positionné","Différencié","Distingué","Séduit",
+    "Attiré","Capté","Retenu","Gardé","Entretenu","Cultivé","Bâti","Tissé","Créé","Établi",
+    "Instauré","Renforcé","Sécurisé","Optimisé","Maximisé","Rentabilisé","Amélioré","Perfectionné","Affiné","Ajusté",
+    "Adapté","Personnalisé","Structuré","Organisé","Planifié","Piloté","Animé","Coordonné","Formé","Recruté",
+    "Managé","Supervisé","Challengé","Motivé","Récompensé","Primé","Classé","Élu","Reconnu","Salué",
+    "Félicité","Atteint","Dépassé","Réalisé","Concrétisé","Livré","Déployé","Étendu","Couvert","Sillonné",
+    "Parcouru","Visité","Rencontré","Contacté","Appelé","Rappelé","Rallié","Engagé","Impliqué","Mobilisé",
+    "Coaché","Briefé","Encadré","Dirigé","Performé"],
+  tech: ["Développé","Conçu","Programmé","Codé","Implémenté","Déployé","Automatisé","Testé","Débogué","Optimisé",
+    "Configuré","Installé","Paramétré","Administré","Maintenu","Sécurisé","Migré","Intégré","Connecté","Synchronisé",
+    "Modélisé","Architecturé","Structuré","Documenté","Versionné","Packagé","Compilé","Exécuté","Lancé","Monitoré",
+    "Supervisé","Diagnostiqué","Résolu","Corrigé","Amélioré","Refactorisé","Nettoyé","Simplifié","Normalisé","Standardisé",
+    "Industrialisé","Scripté","Robotisé","Digitalisé","Numérisé","Informatisé","Créé","Bâti","Construit","Élaboré",
+    "Prototypé","Esquissé","Dessiné","Schématisé","Cartographié","Calibré","Étalonné","Ajusté","Réglé","Analysé",
+    "Audité","Évalué","Mesuré","Benchmarké","Comparé","Sélectionné","Recommandé","Préconisé","Spécifié","Rédigé",
+    "Formalisé","Planifié","Piloté","Coordonné","Encadré","Formé","Accompagné","Vulgarisé","Transmis","Généralisé",
+    "Étendu","Dimensionné","Fluidifié","Accéléré","Fiabilisé","Chiffré","Crypté","Sauvegardé","Restauré","Archivé",
+    "Hébergé","Provisionné","Alloué","Redimensionné","Virtualisé","Conteneurisé","Orchestré","Déclenché","Ordonnancé","Interfacé",
+    "Relié","Exposé","Consommé","Requêté","Interrogé","Extrait","Transformé","Alimenté","Filtré","Agrégé",
+    "Visualisé","Restitué","Outillé","Instrumenté","Tracé","Journalisé","Contrôlé","Validé","Livré","Supporté",
+    "Escaladé","Priorisé","Anticipé","Consolidé","Renforcé"],
+  com: ["Rédigé","Communiqué","Diffusé","Publié","Animé","Créé","Conçu","Élaboré","Produit","Réalisé",
+    "Filmé","Monté","Tourné","Photographié","Illustré","Maquetté","Retouché","Designé","Habillé","Traduit",
+    "Adapté","Corrigé","Relu","Édité","Posté","Programmé","Planifié","Organisé","Coordonné","Piloté",
+    "Géré","Modéré","Interviewé","Interrogé","Sondé","Enquêté","Analysé","Synthétisé","Vulgarisé","Simplifié",
+    "Clarifié","Structuré","Formalisé","Présenté","Exposé","Défendu","Argumenté","Convaincu","Persuadé","Sensibilisé",
+    "Informé","Éduqué","Formé","Accompagné","Conseillé","Orienté","Fédéré","Mobilisé","Engagé","Impliqué",
+    "Fidélisé","Développé","Renforcé","Consolidé","Construit","Bâti","Lancé","Déployé","Déclenché","Orchestré",
+    "Supervisé","Encadré","Managé","Recruté","Briefé","Négocié","Représenté","Positionné","Différencié","Valorisé",
+    "Promu","Célébré","Distingué","Récompensé","Primé","Salué","Reconnu","Cité","Mentionné","Référencé",
+    "Ciblé","Segmenté","Qualifié","Identifié","Détecté","Capté","Attiré","Séduit","Généré","Amplifié",
+    "Boosté","Dynamisé","Stimulé","Optimisé","Amélioré","Perfectionné","Actualisé","Modernisé","Digitalisé","Automatisé",
+    "Centralisé","Archivé","Classé","Catalogué","Indexé","Répertorié","Relayé","Partagé","Popularisé","Médiatisé",
+    "Rayonné","Ancré","Implanté","Cultivé","Entretenu"]
+};
+
+function verbeAleatoire(cat){
+  const liste = VERBES_ACTION[cat] || VERBES_ACTION.management;
+  return liste[Math.floor(Math.random() * liste.length)];
+}
+
+let categorieVerbeActive = 'management';
+function filtrerVerbes(cat){
+  categorieVerbeActive = cat;
+  document.querySelectorAll('#phr-cat-tabs button').forEach(b => b.classList.toggle('active-cat', b.dataset.cat === cat));
+  afficherVerbes();
+}
+function afficherVerbes(){
+  const rechercheEl = document.getElementById('phr-recherche');
+  const recherche = normaliserTexte(rechercheEl ? rechercheEl.value : '');
+  const liste = VERBES_ACTION[categorieVerbeActive].filter(v => !recherche || normaliserTexte(v).includes(recherche));
+  document.getElementById('phr-liste').innerHTML = liste.length
+    ? liste.map(v => '<button type="button" class="chip" onclick="copierTexte(\''+escapeAttr(v)+'\')">'+escapeHTML(v)+'</button>').join('')
+    : '<p class="text-gray-300 text-[12.5px] py-4">Aucun résultat</p>';
+  document.getElementById('phr-total-count').textContent = liste.length + ' verbe(s) affiché(s)';
+}
+
+/* --------------------------------------------------------------
+   Outil de reformulation : remplace un début de phrase faible
+   par un verbe d'action fort choisi dans la catégorie demandée.
+   -------------------------------------------------------------- */
+const DEBUTS_FAIBLES = [
+  /^j['’]ai été chargé\(?e?\)? de\s*/i,
+  /^j['’]ai été responsable de\s*/i,
+  /^j['’]étais chargé\(?e?\)? de\s*/i,
+  /^j['’]étais responsable de\s*/i,
+  /^je m['’]occupais de\s*/i,
+  /^je me suis occupé\(?e?\)? de\s*/i,
+  /^chargé\(?e?\)? de\s*/i,
+  /^responsable de\s*/i,
+  /^en charge de\s*/i,
+  /^je devais\s*/i,
+  /^j['’]ai dû\s*/i,
+  /^j['’]ai fait\s*/i,
+  /^j['’]ai\s*/i
+];
+
+function renforcerPhrase(){
+  const inputEl = document.getElementById('phr-input');
+  const input = inputEl.value.trim();
+  if(!input){ toast('Collez une phrase à renforcer'); return; }
+  const cat = document.getElementById('phr-categorie').value;
+  const verbe = verbeAleatoire(cat);
+
+  let reste = input, trouve = false;
+  for(const regex of DEBUTS_FAIBLES){
+    if(regex.test(reste)){ reste = reste.replace(regex, '').trim(); trouve = true; break; }
+  }
+  if(!trouve) reste = reste.charAt(0).toLowerCase() + reste.slice(1);
+  const resultat = verbe + ' ' + reste;
+
+  document.getElementById('phr-resultat').textContent = resultat;
+  document.getElementById('phr-resultat-zone').style.display = 'block';
+}
+</script>
+
+<script>
+/* --------------------------------------------------------------
+   10. PRÉPARATION ENTRETIEN
+   Détecte une catégorie de poste à partir du champ "poste visé"
+   du CV, puis compose 10 questions (génériques + spécifiques)
+   avec une trame de réponse méthode STAR pré-remplie avec les
+   données du CV.
+   -------------------------------------------------------------- */
+const MOTS_CATEGORIE_ENTRETIEN = {
+  tech: ['developpeur','informatique','logiciel','data','ingenieur','technique','reseau','systeme','programmeur','web','it'],
+  commercial: ['commercial','vente','vendeur','business developer','clientele','representant','conseiller commercial'],
+  com: ['communication','marketing','community','digital','relations publiques','chargee de com','charge de com'],
+  management: ['manager','chef de','responsable','directeur','directrice','superviseur','coordinateur','coordonnateur'],
+  etudiant: ['stage','stagiaire','etudiant','junior','apprenti','alternance']
+};
+const NOMS_CATEGORIE_ENTRETIEN = { tech:'Tech / Informatique', commercial:'Commercial / Vente', com:'Communication / Marketing', management:'Management', etudiant:'Étudiant / Stage', generaliste:'Généraliste' };
+
+function detecterCategorie(posteTexte){
+  const norm = normaliserTexte(posteTexte);
+  for(const cat in MOTS_CATEGORIE_ENTRETIEN){
+    if(MOTS_CATEGORIE_ENTRETIEN[cat].some(m => norm.includes(normaliserTexte(m)))) return cat;
+  }
+  return 'generaliste';
+}
+function detecterCategorieEntretien(){
+  const poste = cvData.infos.poste || '';
+  const posteEl = document.getElementById('ent-poste-detecte');
+  if(posteEl) posteEl.textContent = poste || 'Non renseigné';
+  const cat = detecterCategorie(poste);
+  const catEl = document.getElementById('ent-categorie-detectee');
+  if(catEl) catEl.textContent = NOMS_CATEGORIE_ENTRETIEN[cat];
+  return cat;
+}
+
+const QUESTIONS_GENERIQUES = [
+  'Pouvez-vous vous présenter en quelques minutes ?',
+  'Pourquoi souhaitez-vous rejoindre ce poste ?',
+  'Quelles sont vos principales qualités et un axe que vous cherchez à améliorer ?',
+  'Où vous voyez-vous dans 5 ans ?',
+  'Pourquoi devrions-nous vous choisir plutôt qu\'un autre candidat ?',
+  'Décrivez une situation professionnelle difficile que vous avez surmontée.',
+  'Quelles sont vos prétentions salariales ?',
+  'Avez-vous des questions à nous poser ?'
+];
+
+const QUESTIONS_PAR_CATEGORIE = {
+  tech: [
+    'Décrivez un projet technique dont vous êtes particulièrement fier(ère).',
+    'Comment vous tenez-vous à jour sur les nouvelles technologies ?',
+    'Comment abordez-vous le débogage d\'un problème complexe ?',
+    'Avez-vous déjà travaillé avec des méthodes agiles (Scrum, Kanban) ?',
+    'Comment expliqueriez-vous un concept technique à quelqu\'un de non technique ?'
+  ],
+  commercial: [
+    'Racontez votre plus belle vente ou négociation réussie.',
+    'Comment gérez-vous un refus ou une objection d\'un client ?',
+    'Comment prospectez-vous de nouveaux clients ?',
+    'Quels sont, selon vous, les indicateurs clés d\'un bon commercial ?',
+    'Décrivez votre méthode pour atteindre vos objectifs de vente.'
+  ],
+  com: [
+    'Présentez une campagne ou un contenu de communication que vous avez mené.',
+    'Comment mesurez-vous l\'impact d\'une action de communication ?',
+    'Quels outils ou réseaux sociaux maîtrisez-vous le mieux ?',
+    'Comment géreriez-vous un commentaire négatif ou une crise en ligne ?',
+    'Comment adaptez-vous votre message selon le public visé ?'
+  ],
+  management: [
+    'Comment gérez-vous un conflit au sein de votre équipe ?',
+    'Décrivez votre style de management.',
+    'Comment motivez-vous une équipe en période difficile ?',
+    'Comment déléguez-vous les tâches ?',
+    'Racontez une décision difficile que vous avez dû prendre en tant que responsable.'
+  ],
+  etudiant: [
+    'Pourquoi avoir choisi cette formation / ce domaine d\'études ?',
+    'Qu\'attendez-vous de ce stage ?',
+    'Quelles expériences, même non professionnelles, montrent votre motivation ?',
+    'Comment organisez-vous votre travail entre études et autres engagements ?',
+    'Qu\'est-ce qui justifie votre candidature malgré une expérience encore limitée ?'
+  ],
+  generaliste: [
+    'Décrivez une réussite professionnelle dont vous êtes fier(ère).',
+    'Comment gérez-vous la pression et les délais serrés ?',
+    'Qu\'est-ce qui vous motive dans le travail au quotidien ?',
+    'Donnez un exemple de travail en équipe réussi.',
+    'Quelles sont vos disponibilités ?'
+  ]
+};
+
+function reponseSTAR(cat){
+  const poste = cvData.infos.poste || 'ce poste';
+  const exp = cvData.experiences[0];
+  const expTxt = exp && exp.poste ? ('lors de votre expérience de ' + exp.poste + (exp.entreprise ? ' chez ' + exp.entreprise : '')) : 'dans une expérience précédente (stage, bénévolat, études...)';
+  const competence = cvData.competences.techniques[0] || cvData.competences.soft[0] || "votre sens de l'organisation";
+  return "Structurez votre réponse avec la méthode STAR :\n"
+    + "• Situation : décrivez le contexte (" + expTxt + ").\n"
+    + "• Tâche : quel était l'objectif ou le problème à résoudre ?\n"
+    + "• Action : quelles actions concrètes avez-vous menées (mettez en avant " + competence + ") ?\n"
+    + "• Résultat : quel résultat concret ou chiffré avez-vous obtenu, en lien avec le poste de " + poste + " ?";
+}
+
+function genererQuestionsEntretien(){
+  const cat = detecterCategorieEntretien();
+  const spec = QUESTIONS_PAR_CATEGORIE[cat] || QUESTIONS_PAR_CATEGORIE.generaliste;
+  const questions = [
+    QUESTIONS_GENERIQUES[0], QUESTIONS_GENERIQUES[1],
+    spec[0], spec[1],
+    QUESTIONS_GENERIQUES[2], spec[2],
+    spec[3], QUESTIONS_GENERIQUES[5],
+    spec[4], QUESTIONS_GENERIQUES[6]
+  ];
+  const reponse = reponseSTAR(cat);
+
+  const zone = document.getElementById('ent-liste');
+  zone.innerHTML = questions.map((q,i) => (
+    '<div class="card">'
+    + '<p class="font-bold text-[13.5px] mb-2"><span style="color:var(--bf-rouge)">Q'+(i+1)+'.</span> '+escapeHTML(q)+'</p>'
+    + '<p class="text-[12px] text-gray-500 whitespace-pre-line">'+escapeHTML(reponse)+'</p>'
+    + '</div>'
+  )).join('');
+  toast('10 questions générées ✓');
+  zone.scrollIntoView({behavior:'smooth', block:'start'});
+}
+</script>
+
+<script>
+/* --------------------------------------------------------------
+   11. SUIVI DE CANDIDATURES — mini CRM en localStorage
+   -------------------------------------------------------------- */
+const STATUTS_LISTE = ['Envoyée','Relance effectuée','Entretien programmé','Entretien passé','Offre reçue','Refusée','Acceptée'];
+const STATUTS_COULEUR = { 'Envoyée':'#6B7280','Relance effectuée':'#0EA5E9','Entretien programmé':'#F59E0B','Entretien passé':'#8B5CF6','Offre reçue':'#16A34A','Refusée':'#DC2626','Acceptée':'#15803D' };
+
+function ajouterCandidature(){
+  const entreprise = document.getElementById('cand-entreprise').value.trim();
+  const poste = document.getElementById('cand-poste').value.trim();
+  const date = document.getElementById('cand-date').value || new Date().toISOString().slice(0,10);
+  const statut = document.getElementById('cand-statut').value;
+  const notes = document.getElementById('cand-notes').value.trim();
+  if(!entreprise || !poste){ toast("Renseignez au moins l'entreprise et le poste"); return; }
+
+  candidatures.unshift({id:genId(), entreprise, poste, dateEnvoi:date, statut, notes});
+  sauvegarderCandidatures();
+  document.getElementById('cand-entreprise').value = '';
+  document.getElementById('cand-poste').value = '';
+  document.getElementById('cand-date').value = '';
+  document.getElementById('cand-notes').value = '';
+  document.getElementById('cand-statut').value = 'Envoyée';
+  afficherCandidatures();
+  toast('Candidature ajoutée ✓');
+}
+function supprimerCandidature(id){
+  if(!confirm('Supprimer cette candidature ?')) return;
+  candidatures = candidatures.filter(c => c.id !== id);
+  sauvegarderCandidatures();
+  afficherCandidatures();
+}
+function majStatutCandidature(id, statut){
+  const c = candidatures.find(c => c.id === id);
+  if(!c) return;
+  c.statut = statut;
+  sauvegarderCandidatures();
+  afficherCandidatures();
+}
+function joursDepuis(dateStr){
+  if(!dateStr) return 0;
+  return Math.floor((new Date() - new Date(dateStr)) / 86400000);
+}
+function necessiteRelance(c){ return c.statut === 'Envoyée' && joursDepuis(c.dateEnvoi) >= 7; }
+
+let filtreCandidatureActif = 'toutes';
+function filtrerCandidatures(f){
+  filtreCandidatureActif = f;
+  document.querySelectorAll('#cand-filtre-tabs button').forEach(b => b.classList.toggle('active-filtre', b.dataset.filtre === f));
+  afficherCandidatures();
+}
+
+function afficherCandidatures(){
+  const totalEl = document.getElementById('cand-total');
+  if(!totalEl) return;
+  totalEl.textContent = candidatures.length;
+
+  let liste = candidatures.slice().sort((a,b) => new Date(b.dateEnvoi) - new Date(a.dateEnvoi));
+  if(filtreCandidatureActif === 'relance') liste = liste.filter(necessiteRelance);
+  if(filtreCandidatureActif === 'active') liste = liste.filter(c => c.statut !== 'Refusée' && c.statut !== 'Acceptée');
+
+  const zone = document.getElementById('cand-liste');
+  document.getElementById('cand-empty').style.display = liste.length ? 'none' : 'block';
+
+  zone.innerHTML = liste.map(c => {
+    const relance = necessiteRelance(c);
+    const couleur = STATUTS_COULEUR[c.statut] || '#6B7280';
+    const jours = joursDepuis(c.dateEnvoi);
+    return '<div class="card !p-3">'
+      + '<div class="flex justify-between items-start gap-2">'
+      + '<div><p class="font-bold text-[13.5px]">'+escapeHTML(c.poste)+'</p>'
+      + '<p class="text-[12px] text-gray-500">'+escapeHTML(c.entreprise)+(c.dateEnvoi ? ' · '+new Date(c.dateEnvoi).toLocaleDateString('fr-FR') : '')+'</p></div>'
+      + '<button onclick="supprimerCandidature(\''+c.id+'\')" class="btn-ghost-danger flex-shrink-0"><i class="fa-solid fa-trash"></i></button>'
+      + '</div>'
+      + (relance ? '<div class="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[11.5px] text-amber-800 font-semibold"><i class="fa-solid fa-bell mr-1"></i> Relancer ! Envoyée il y a '+jours+' jours sans réponse</div>' : '')
+      + (c.notes ? '<p class="text-[12px] text-gray-500 mt-2">'+escapeHTML(c.notes)+'</p>' : '')
+      + '<div class="flex items-center gap-2 mt-2.5">'
+      + '<span class="w-2 h-2 rounded-full flex-shrink-0" style="background:'+couleur+'"></span>'
+      + '<select class="form-input !py-1.5 !text-[12px] flex-1" onchange="majStatutCandidature(\''+c.id+'\', this.value)">'
+      + STATUTS_LISTE.map(s => '<option value="'+s+'" '+(c.statut===s?'selected':'')+'>'+s+'</option>').join('')
+      + '</select></div></div>';
+  }).join('');
+}
+</script>
+
+<script>
+/* --------------------------------------------------------------
+   12. EXEMPLES PRÉ-REMPLIS (pour tester rapidement l'application)
+   -------------------------------------------------------------- */
+const EXEMPLES_CV = {
+  etudiant: {
+    infos:{ prenom:'Aïcha', nom:'OUEDRAOGO', poste:'Stage — Assistante Administrative et Comptable', telephone:'+226 70 12 34 56', email:'aicha.ouedraogo@email.com', ville:'Ouagadougou', linkedin:'' },
+    profil:{ texte:"Étudiante en 3ème année de Licence en Gestion à l'Université Joseph KI-ZERBO, rigoureuse et organisée, je recherche un stage de 3 mois en administration ou comptabilité pour mettre en pratique mes connaissances en bureautique et gestion de dossiers." },
+    experiences:[
+      { poste:'Bénévole — Trésorière adjointe', entreprise:'Association des Étudiants en Gestion (AEG)', ville:'Ouagadougou', debut:'2024-09', fin:'2025-06', actuel:false, description:"- Organisé 3 événements étudiants réunissant plus de 100 participants\n- Tenu la caisse et les comptes de l'association\n- Rédigé les comptes rendus de réunion" },
+      { poste:'Vendeuse (job de vacances)', entreprise:'Boutique Waaga', ville:'Ouagadougou', debut:'2024-07', fin:'2024-08', actuel:false, description:"- Accueilli et conseillé la clientèle au quotidien\n- Géré la caisse et les stocks de la boutique" }
+    ],
+    formations:[
+      { diplome:'Licence 3 — Sciences Économiques et de Gestion (en cours)', etablissement:'Université Joseph KI-ZERBO', ville:'Ouagadougou', annee:'2023 — 2026', mention:'' },
+      { diplome:'Baccalauréat série G2', etablissement:'Lycée Philippe Zinda Kaboré', ville:'Ouagadougou', annee:'2023', mention:'Mention Assez Bien' }
+    ],
+    competences:{ techniques:['Excel','Word','PowerPoint','Sage Comptabilité (notions)'], soft:["Rigueur","Sens de l'organisation","Esprit d'équipe","Ponctualité"] },
+    langues:[ {langue:'Français', niveau:'Langue maternelle'}, {langue:'Anglais', niveau:'Intermédiaire'}, {langue:'Mooré', niveau:'Langue maternelle'} ],
+    templateId:'sp5'
+  },
+  commercial: {
+    infos:{ prenom:'Boukary', nom:'SAWADOGO', poste:'Chargé de Clientèle / Commercial Terrain', telephone:'+226 76 45 78 90', email:'boukary.sawadogo@email.com', ville:'Ouagadougou', linkedin:'linkedin.com/in/boukary-sawadogo' },
+    profil:{ texte:"Commercial terrain avec 4 ans d'expérience dans la distribution et les télécommunications au Burkina Faso. Reconnu pour ma capacité à développer un portefeuille clients et à dépasser mes objectifs de vente. À la recherche d'un poste de chargé de clientèle pour mettre mon dynamisme au service d'une entreprise ambitieuse." },
+    experiences:[
+      { poste:'Commercial Terrain', entreprise:'Faso Distribution SARL', ville:'Ouagadougou', debut:'2022-03', fin:'', actuel:true, description:"- Développé un portefeuille de plus de 150 points de vente dans la région du Centre\n- Dépassé les objectifs mensuels de vente de 20% en moyenne\n- Formé et accompagné 3 nouveaux commerciaux juniors\n- Négocié des accords de référencement avec les revendeurs partenaires" },
+      { poste:'Conseiller Clientèle', entreprise:'Telecel Faso', ville:'Ouagadougou', debut:'2020-06', fin:'2022-02', actuel:false, description:"- Accueilli et conseillé en moyenne 40 clients par jour en agence\n- Fidélisé la clientèle grâce à un suivi personnalisé\n- Contribué à une hausse de 15% des ventes d'abonnements sur l'année" }
+    ],
+    formations:[
+      { diplome:'BTS Techniques Commerciales', etablissement:'École Supérieure de Commerce et de Gestion (ESCG)', ville:'Ouagadougou', annee:'2020', mention:'' }
+    ],
+    competences:{ techniques:['Prospection terrain','Négociation commerciale','CRM','Excel'], soft:['Sens du relationnel','Persévérance','Esprit de challenge'] },
+    langues:[ {langue:'Français', niveau:'Courant'}, {langue:'Anglais', niveau:'Intermédiaire'}, {langue:'Dioula', niveau:'Courant'} ],
+    templateId:'sp2'
+  },
+  com: {
+    infos:{ prenom:'Aminata', nom:'KABORÉ', poste:'Chargée de Communication', telephone:'+226 78 23 45 67', email:'aminata.kabore@email.com', ville:'Ouagadougou', linkedin:'linkedin.com/in/aminata-kabore' },
+    profil:{ texte:"Chargée de communication passionnée par le digital, avec 3 ans d'expérience en gestion de réseaux sociaux et création de contenu au sein d'ONG et d'entreprises locales. Créative et rigoureuse, je souhaite mettre mes compétences en communication digitale au service de projets à fort impact." },
+    experiences:[
+      { poste:'Chargée de Communication', entreprise:'ONG Jeunesse & Développement', ville:'Ouagadougou', debut:'2023-01', fin:'', actuel:true, description:"- Géré les réseaux sociaux de l'organisation (Facebook, Instagram, LinkedIn), avec une croissance de 60% des abonnés\n- Conçu des supports de communication (affiches, flyers, rapports) avec Canva\n- Rédigé des articles et communiqués de presse\n- Couvert et animé la communication de 10 événements terrain" },
+      { poste:'Assistante Communication (stage)', entreprise:'Radio Savane FM', ville:'Ouagadougou', debut:'2022-06', fin:'2022-12', actuel:false, description:"- Participé à la production de contenus radio et digitaux\n- Assuré une veille médiatique quotidienne" }
+    ],
+    formations:[
+      { diplome:'Licence en Communication et Journalisme', etablissement:'Université Aube Nouvelle', ville:'Ouagadougou', annee:'2022', mention:'Mention Bien' }
+    ],
+    competences:{ techniques:['Canva','Community Management','Rédaction web','Photographie'], soft:['Créativité','Sens du relationnel','Réactivité'] },
+    langues:[ {langue:'Français', niveau:'Langue maternelle'}, {langue:'Anglais', niveau:'Courant'}, {langue:'Mooré', niveau:'Langue maternelle'} ],
+    templateId:'mo9'
+  }
+};
+
+function ouvrirExemples(){
+  document.getElementById('modal-root').innerHTML = `
+    <div class="fixed inset-0 bg-black/50 z-[300] flex items-end sm:items-center justify-center p-3" onclick="if(event.target===this) fermerModal()">
+      <div class="bg-white rounded-2xl w-full max-w-sm p-5">
+        <h3 class="font-bold text-[15px] mb-1">Charger un exemple pré-rempli</h3>
+        <p class="text-[12px] text-gray-500 mb-4">Pratique pour tester l'application. Cela remplacera le CV actuellement en cours d'édition.</p>
+        <div class="space-y-2">
+          <button type="button" class="btn-secondary w-full !justify-start" onclick="chargerExemple('etudiant')"><i class="fa-solid fa-user-graduate"></i> Étudiant — Stage Administratif</button>
+          <button type="button" class="btn-secondary w-full !justify-start" onclick="chargerExemple('commercial')"><i class="fa-solid fa-handshake"></i> Commercial — Chargé de Clientèle</button>
+          <button type="button" class="btn-secondary w-full !justify-start" onclick="chargerExemple('com')"><i class="fa-solid fa-bullhorn"></i> Chargée de Communication</button>
+        </div>
+        <button type="button" class="btn-ghost-danger w-full mt-4 !text-gray-400" onclick="fermerModal()">Annuler</button>
+      </div>
+    </div>`;
+}
+function fermerModal(){ document.getElementById('modal-root').innerHTML = ''; }
+
+function chargerExemple(cle){
+  const modele = EXEMPLES_CV[cle];
+  if(!modele) return;
+  cvData = JSON.parse(JSON.stringify(modele));
+  cvData.experiences.forEach(e => e.id = genId());
+  cvData.formations.forEach(f => f.id = genId());
+  cvData.langues.forEach(l => l.id = genId());
+  sauvegarderCV();
+  remplirFormulaireDepuisCV();
+  fermerModal();
+  allerPage('page-cv');
+  toast('Exemple chargé — modifiez-le librement ✓');
+}
+
+// Recharge tous les champs visibles du formulaire à partir de cvData
+// (utilisé après le chargement d'un exemple ou au démarrage de l'appli)
+function remplirFormulaireDepuisCV(){
+  document.getElementById('f-prenom').value = cvData.infos.prenom || '';
+  document.getElementById('f-nom').value = cvData.infos.nom || '';
+  document.getElementById('f-poste').value = cvData.infos.poste || '';
+  document.getElementById('f-telephone').value = cvData.infos.telephone || '';
+  document.getElementById('f-email').value = cvData.infos.email || '';
+  document.getElementById('f-ville').value = cvData.infos.ville || '';
+  document.getElementById('f-linkedin').value = cvData.infos.linkedin || '';
+  document.getElementById('f-profil').value = cvData.profil.texte || '';
+  document.getElementById('profil-count').textContent = (cvData.profil.texte || '').length;
+  renderExperiences();
+  renderFormations();
+  renderLangues();
+  afficherChips('techniques');
+  afficherChips('soft');
+  afficherGrilleTemplates();
+  rafraichirApercu();
+}
+</script>
+
+<script>
+/* --------------------------------------------------------------
+   13. INITIALISATION GÉNÉRALE
+   -------------------------------------------------------------- */
+document.addEventListener('DOMContentLoaded', function(){
+  chargerCV();
+  chargerCandidatures();
+  chargerLM();
+
+  remplirFormulaireDepuisCV();   // recharge le formulaire CV + aperçu + templates
+  filtrerVerbes('management');   // banque de phrases : catégorie par défaut
+  afficherCandidatures();        // suivi de candidatures
+  detecterCategorieEntretien();  // préparation entretien
+
+  document.getElementById('btn-prev').disabled = true;
+});
+</script>
+
+</body>
+</html>
